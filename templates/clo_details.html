@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+<title>CLO Details</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+form { background: #f5f5f5; padding: 20px; border-radius: 8px; max-width: 600px; }
+input[type="text"], input[type="number"] { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+.clo-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<h2>Ders Öğrenim Çıktıları (CLO) Detayları</h2>
+<form method="post">
+  <label>Kaç adet CLO var? <input type="number" name="clo_count" min="1" max="20" value="{{ clo_count }}" required></label><br><br>
+  <div id="clo_names_container">
+    {% for i in range(clo_count) %}
+      <div class="clo-section">
+        <h3>CLO {{ i+1 }}</h3>
+        <label>CLO Adı: <input type="text" name="clo_name_{{i}}" placeholder="Örn: CLO{{i+1}}" required></label><br>
+      </div>
+    {% endfor %}
+  </div>
+  <input type="submit" value="Kaydet ve Devam Et">
+</form>
+<script>
+    document.querySelector('input[name="clo_count"]').addEventListener('input', function() {
+        const count = parseInt(this.value);
+        const container = document.getElementById('clo_names_container');
+        container.innerHTML = ''; // Clear existing inputs
+
+        if (isNaN(count) || count < 1) return;
+
+        for (let i = 0; i < count; i++) {
+            const div = document.createElement('div');
+            div.className = 'clo-section';
+            div.innerHTML = `
+                <h3>CLO ${i+1}</h3>
+                <label>CLO Adı: <input type="text" name="clo_name_${i}" placeholder="Örn: CLO${i+1}" required></label><br>
+            `;
+            container.appendChild(div);
+        }
+    });
+</script>
+</body>
+</html>
+"""

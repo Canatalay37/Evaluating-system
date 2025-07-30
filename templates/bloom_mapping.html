@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+<head>
+<title>Bloom Level & CLO Mapping</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h2 { color: #333; }
+.container {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 1200px; 
+    margin: 0 auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+    font-size: 10px; 
+}
+th {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+.clo-row-header {
+    background-color: #d1ecf1; 
+    font-weight: bold;
+    text-align: left;
+    min-width: 80px;
+}
+.exam-header {
+    background-color: #cce5ff; 
+    font-size: 11px;
+    font-weight: bold;
+}
+.question-header {
+    background-color: #f0f0f0;
+    font-size: 10px;
+    padding: 4px;
+}
+.input-cell input {
+    width: 35px; 
+    padding: 2px;
+    margin: 1px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    text-align: center;
+    font-size: 9px;
+}
+.blue-part-col {
+    background-color: #e0f2f7; 
+    font-weight: bold;
+    color: #0056b3;
+}
+.total-row {
+    background-color: #fffacd; 
+    font-weight: bold;
+}
+.calculated-value {
+    background-color: #e6ffe6; 
+    color: #006400;
+    font-weight: bold;
+}
+.submit-btn {
+    background: #28a745; 
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+.submit-btn:hover {
+    background: #218838;
+}
+</style>
+</head>
+<body>
+<h2>Bloom Seviyesi ve CLO Eşleştirme</h2>
+<div class="container">
+    <form method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2" class="clo-row-header">CLO</th>
+                    {% for exam in exams %}
+                        <th colspan="{{ exam.question_count * 4 }}" class="exam-header">{{ exam.name }}</th>
+                    {% endfor %}
+                    <th colspan="2" class="blue-part-col">Mavi Kısım (Hesaplanan)</th> 
+                    <th colspan="4" class="blue-part-col">CLO Performans Değerleri</th>
+                </tr>
+                <tr>
+                    {% for exam in exams %}
+                        {% for q_idx in range(exam.question_count|int) %}
+                            <th colspan="4" class="question-header">Q{{ q_idx + 1 }}</th>
+                        {% endfor %}
+                    {% endfor %}
+                    <th class="blue-part-col">Max CLO Score</th>
+                    <th class="blue-part-col">Weighted CLO Score</th>
+                    <th class="blue-part-col">Normalized CLO Score</th>
+                    <th class="blue-part-col">Max Bloom Score</th>
+                    <th class="blue-part-col">Weighted Bloom Score</th>
+                    <th class="blue-part-col">Average Bloom Score</th>
+                </tr>
+                <tr>
+                    <th></th> 
+                    {% for exam in exams %}
+                        {% for q_idx in range(exam.question_count|int) %}
+                            <th>QCT(%)</th>
+                            <th>W</th>
+                            <th>SPM</th> 
+                            <th>BL</th>
+                        {% endfor %}
+                    {% endfor %}
+                    <th class="blue-part-col"></th>
+                    <th class="blue-part-col"></th>
+                    <th class="blue-part-col"></th>
+                    <th class="blue-part-col"></th>
+                    <th class="blue-part-col"></th>
+                    <th class="blue-part-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clo_idx, clo in enumerate(clos) %}
+                <tr>
+                    <td class="clo-row-header">{{ clo.name }}</td>
+                    {% for exam_idx, exam in enumerate(exams) %}
+                        {% for q_idx in range(exam.question_count|int) %}
+                            {% set global_q_idx = all_questions_flat_map[exam_idx][q_idx] %}
+                            <td class="input-cell">
+                                <input type="number" name="qct_{{ clo_idx }}_{{ global_q_idx }}" value="{{ clo_q_data.get(clo_idx, {}).get(global_q_idx, {}).get('qct', '') }}" min="0" max="100" step="1" placeholder="QCT">
+                            </td>
+                            <td class="input-cell">
+                                <input type="number" name="w_{{ clo_idx }}_{{ global_q_idx }}" value="{{ clo_q_data.get(clo_idx, {}).get(global_q_idx, {}).get('w', '') }}" min="0" max="1" step="0.01" placeholder="W">
+                            </td>
+                            <td class="calculated-value">
+                                <span id="spm_{{ clo_idx }}_{{ global_q_idx }}">
+                                    {{ '%.2f' % clo_q_data.get(clo_idx, {}).get(global_q_idx, {}).get('spm', 0) if clo_q_data.get(clo_idx, {}).get(global_q_idx, {}).get('spm') is not none else 'N/A' }}
+                                </span>
+                            </td>
+                            <td class="input-cell">
+                                <input type="number" name="bl_{{ clo_idx }}_{{ global_q_idx }}" value="{{ clo_q_data.get(clo_idx, {}).get(global_q_idx, {}).get('bl', '') }}" min="1" max="6" step="1" placeholder="BL">
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                    {# Mavi kısım hesaplanan değerler #}
+                    <td class="blue-part-col calculated-value" id="max_clo_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('max_clo_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="weighted_clo_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('weighted_clo_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="normalized_clo_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('normalized_clo_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="max_bloom_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('max_bloom_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="weighted_bloom_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('weighted_bloom_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="average_bloom_score_{{ clo_idx }}">
+                        {{ '%.2f' % clo_results.get(clo_idx, {}).get('average_bloom_score', 0) }}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="{{ 1 + all_questions_flat|length * 4 }}">Toplam</td>
+                    <td class="blue-part-col calculated-value" id="total_max_clo_score">
+                        {{ '%.2f' % total_clo_results.get('total_max_clo_score', 0) }}
+                    </td>
+                    <td class="blue-part-col calculated-value" id="total_weighted_clo_score">
+                        {{ '%.2f' % total_clo_results.get('total_weighted_clo_score', 0) }}
+                    </td>
+                     <td class="blue-part-col calculated-value" id="total_normalized_clo_score">
+                        {{ '%.2f' % total_clo_results.get('total_normalized_clo_score', 0) }}
+                    </td>
+                     <td class="blue-part-col calculated-value" id="total_max_bloom_score">
+                        {{ '%.2f' % total_clo_results.get('total_max_bloom_score', 0) }}
+                    </td>
+                     <td class="blue-part-col calculated-value" id="total_weighted_bloom_score">
+                        {{ '%.2f' % total_clo_results.get('total_weighted_bloom_score', 0) }}
+                    </td>
+                     <td class="blue-part-col calculated-value" id="total_average_bloom_score">
+                        {{ '%.2f' % total_clo_results.get('total_average_bloom_score', 0) }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="submit" class="submit-btn">Değerleri Kaydet ve Hesapla</button>
+    </form>
+</div>
+
+<script>
+    const examsData = JSON.parse('{{ exams | tojson | safe }}');
+    const clos = JSON.parse('{{ clos | tojson | safe }}');
+    const allQuestionsFlat = JSON.parse('{{ all_questions_flat | tojson | safe }}');
+    const studentsData = JSON.parse('{{ students_data | tojson | safe }}'); 
+    const studentCount = JSON.parse('{{ student_count | tojson | safe }}');
+
+    function calculateSPM(globalQuestionIdx, allStudentsData) {
+        const gradesForQuestion = [];
+        allStudentsData.forEach(student => {
+            // Check if student and student.grades exist, and if globalQuestionIdx is a valid index
+            if (student && student.grades && globalQuestionIdx < student.grades.length) {
+                const grade = student.grades[globalQuestionIdx];
+                if (grade !== null && grade !== undefined) { // Check for null or undefined grades
+                    gradesForQuestion.push(grade);
+                }
+            }
+        });
+
+        if (gradesForQuestion.length === 0) {
+            return 0; 
+        }
+
+        gradesForQuestion.sort((a, b) => a - b);
+        const mid = Math.floor(gradesForQuestion.length / 2);
+        const median = gradesForQuestion.length % 2 === 0
+            ? (gradesForQuestion[mid - 1] + gradesForQuestion[mid]) / 2
+            : gradesForQuestion[mid];
+        
+        const questionMaxPoints = allQuestionsFlat.find(q => q.global_question_idx === globalQuestionIdx)?.max_points || 0;
+
+        if (questionMaxPoints === 0) {
+            return 0;
+        }
+
+        return (median / questionMaxPoints) * 100;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="number"][name^="qct_"], input[type="number"][name^="w_"], input[type="number"][name^="bl_"]');
+
+        inputs.forEach(input => {
+            input.addEventListener('input', updateCalculations);
+            input.addEventListener('change', updateCalculations);
+        });
+
+        allQuestionsFlat.forEach(q => {
+            const spmValue = calculateSPM(q.global_question_idx, studentsData);
+            document.querySelectorAll(`span[id^="spm_"][id$="_${q.global_question_idx}"]`).forEach(spmSpan => {
+                spmSpan.textContent = spmValue.toFixed(2);
+            });
+        });
+
+        // Initial calculation on page load
+        updateCalculations(); 
+    });
+
+    function updateCalculations() {
+        const cloResults = {};
+        const totalCloResults = {
+            total_max_clo_score: 0,
+            total_weighted_clo_score: 0,
+            total_normalized_clo_score: 0,
+            total_max_bloom_score: 0,
+            total_weighted_bloom_score: 0,
+            total_average_bloom_score: 0
+        };
+
+        clos.forEach((clo, cloIdx) => {
+            let maxCloScore = 0;
+            let weightedCloScore = 0;
+            let maxBloomScore = 0; 
+            let weightedBloomScore = 0;
+
+            allQuestionsFlat.forEach(q => {
+                const globalQIdx = q.global_question_idx;
+                const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
+                const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
+                const blInput = document.querySelector(`input[name="bl_${cloIdx}_${globalQIdx}"]`);
+                const spmSpan = document.getElementById(`spm_${cloIdx}_${globalQIdx}`);
+
+                // Parse values to float, defaulting to 0 if not a valid number
+                const qct = parseFloat(qctInput?.value) || 0;
+                const w = parseFloat(wInput?.value) || 0;
+                const bl = parseFloat(blInput?.value) || 0;
+                const spm = parseFloat(spmSpan?.textContent) || 0; 
+
+                maxCloScore += (qct / 100) * w;
+                weightedCloScore += (qct / 100) * w * spm;
+                maxBloomScore += (qct / 100) * w * bl;
+                weightedBloomScore += (qct / 100) * w * bl;
+            });
+
+            const normalizedCloScore = (maxCloScore > 0) ? (weightedCloScore / maxCloScore) : 0;
+            const averageBloomScore = (maxCloScore > 0) ? (weightedBloomScore / maxCloScore) : 0;
+
+            cloResults[cloIdx] = {
+                max_clo_score: maxCloScore,
+                weighted_clo_score: weightedCloScore,
+                normalized_clo_score: normalizedCloScore,
+                max_bloom_score: maxBloomScore, 
+                weighted_bloom_score: weightedBloomScore, 
+                average_bloom_score: averageBloomScore
+            };
+
+            document.getElementById(`max_clo_score_${cloIdx}`).textContent = maxCloScore.toFixed(2);
+            document.getElementById(`weighted_clo_score_${clo_idx}`).textContent = weightedCloScore.toFixed(2);
+            document.getElementById(`normalized_clo_score_${clo_idx}`).textContent = normalizedCloScore.toFixed(2);
+            document.getElementById(`max_bloom_score_${clo_idx}`).textContent = maxBloomScore.toFixed(2); 
+            document.getElementById(`weighted_bloom_score_${clo_idx}`).textContent = weightedBloomScore.toFixed(2); 
+            document.getElementById(`average_bloom_score_${clo_idx}`).textContent = averageBloomScore.toFixed(2);
+
+            totalCloResults.total_max_clo_score += maxCloScore;
+            totalCloResults.total_weighted_clo_score += weightedCloScore;
+            // Normalized and average bloom scores for total row are not simply sums,
+            // they require re-calculation based on total weighted and max scores.
+            // For now, these are kept as sums of individual CLO scores for display purposes,
+            // but might need re-evaluation based on specific calculation requirements.
+            totalCloResults.total_normalized_clo_score += normalizedCloScore; 
+            totalCloResults.total_max_bloom_score += maxBloomScore;
+            totalCloResults.total_weighted_bloom_score += weightedBloomScore;
+            totalCloResults.total_average_bloom_score += averageBloomScore; 
+
+        });
+
+        document.getElementById('total_max_clo_score').textContent = totalCloResults.total_max_clo_score.toFixed(2);
+        document.getElementById('total_weighted_clo_score').textContent = totalCloResults.total_weighted_clo_score.toFixed(2);
+        // These totals are conceptually problematic as sums of normalized/average values.
+        // They are marked 'N/A' as sums. If actual overall normalized/average is needed,
+        // it must be calculated differently (e.g., total_weighted_clo_score / total_max_clo_score).
+        document.getElementById('total_normalized_clo_score').textContent = "N/A"; 
+        document.getElementById('total_max_bloom_score').textContent = totalCloResults.total_max_bloom_score.toFixed(2);
+        document.getElementById('total_weighted_bloom_score').textContent = totalCloResults.total_weighted_bloom_score.toFixed(2);
+        document.getElementById('total_average_bloom_score').textContent = "N/A"; 
+
+    }
+</script>
+</body>
+</html>
+"""

@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<title>Summary</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+.summary-section { background: #f8f9fa; padding: 20px; margin: 10px 0; border-radius: 8px; border: 1px solid #dee2e6; }
+ul { list-style-type: none; padding: 0; }
+li { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+.back-btn { background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }
+.back-btn:hover { background: #545b62; }
+table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background-color: #e9ecef; }
+</style>
+</head>
+<body>
+<h2>Sınav Değerlendirme Özeti</h2>
+<div class="summary-section">
+  <h3>Genel Bilgiler</h3>
+  <p><strong>Sınav Sayısı:</strong> {{ exam_count }}</p>
+  <p><strong>Öğrenci Sayısı:</strong> {{ student_count }}</p>
+</div>
+
+{% if exams %}
+<div class="summary-section">
+  <h3>Sınav Detayları</h3>
+  <ul>
+    {% for exam in exams %}
+      <li>
+        <strong>{{ exam['name'] }}</strong><br>
+        Soru Sayısı: {{ exam['question_count'] }}, Ağırlık: {{ exam['weight'] }}%
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if question_points %}
+<div class="summary-section">
+  <h3>Soru Puanları</h3>
+  {% for exam_idx, exam in enumerate(exams) %}
+    <h4>{{ exam['name'] }}</h4>
+    <p>
+    {% for q_idx in range(exam['question_count']|int) %}
+      Soru {{ q_idx + 1 }}: {{ question_points[exam_idx][q_idx] }} puan{% if not loop.last %}, {% endif %}
+    {% endfor %}
+    </p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if students %}
+<div class="summary-section">
+  <h3>Öğrenci Notları ve Genel Puanları</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Öğrenci No</th>
+        <th>Ad-Soyad</th>
+        <th>Toplam Puan</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for student in students %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ student.number }}</td>
+          <td>{{ student.name }}</td>
+          <td>{{ student.total }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<a href="{{ url_for('main') }}" class="back-btn">Yeni Değerlendirme Başlat</a>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!doctype html>
+<html>
+<head>
+<title>Student Grades</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+.tabs {
+  display: flex;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+}
+.tab-button {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  margin-right: 5px;
+  font-weight: bold;
+}
+.tab-button.active {
+  background-color: #fff;
+  border-color: #007bff;
+  color: #007bff;
+  border-bottom: 1px solid #fff; 
+}
+.tab-content {
+  display: none; 
+  padding: 20px 0;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background: #f9f9f9;
+}
+.tab-content.active {
+  display: block; 
+}
+
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #333; padding: 3px; text-align: center; vertical-align: middle; }
+th { background-color: #f0f0f0; font-weight: bold; font-size: 11px; }
+input[type="text"], input[type="number"] { 
+  width: 100%; 
+  border: none; 
+  text-align: center; 
+  padding: 2px; 
+  font-size: 11px;
+  box-sizing: border-box;
+}
+input[readonly] { 
+  background-color: #f8f9fa; 
+  color: #333;
+}
+.student-row { background-color: white; }
+.stats-row { background-color: #e6f3ff; }
+.total-points-row { background-color: #ffff99; font-weight: bold; }
+.exam-contribution-row { background-color: #90EE90; }
+.performance-row { background-color: #FFA500; color: #d63031; font-weight: bold; }
+.submit-btn { 
+  background: #007bff; 
+  color: white; 
+  padding: 10px 20px; 
+  border: none; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  margin-top: 20px; 
+}
+.id-col { width: 30px; }
+.student-info-col { width: 120px; }
+.question-col { width: 45px; }
+.total-col { width: 60px; }
+
+.top-right-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: #6f42c1; 
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none; 
+}
+.top-right-button:hover {
+    background-color: #5936a0;
+}
+
+</style>
+</head>
+<body>
+<h2>Öğrenci Bilgileri ve Not Girişi</h2>
+
+<a href="{{ url_for('bloom_level_mapping') }}" class="top-right-button">Bloom Level System</a>
+
+<form method='post'>
+  <div class="tabs">
+    {% for exam_idx, exam in enumerate(exams) %}
+      <button type="button" class="tab-button {% if loop.first %}active{% endif %}" data-tab="exam-{{ exam_idx }}">
+        {{ exam.name }}
+      </button>
+    {% endfor %}
+  </div>
+
+  {% for exam_idx, exam in enumerate(exams) %}
+    <div id="exam-{{ exam_idx }}" class="tab-content {% if loop.first %}active{% endif %}">
+      <h3>{{ exam.name }} Sınavı Not Girişi</h3>
+      <table>
+        <thead>
+          <tr>
+            <th class="id-col">ID</th>
+            <th class="student-info-col">Öğrenci No</th>
+            <th class="student-info-col">Ad-Soyad</th>
+            {% for q_flat in all_questions_flat %}
+              {% if q_flat.exam_idx == exam_idx %} 
+                <th class="question-col">Soru {{ q_flat.question_idx_in_exam + 1 }}</th>
+              {% endif %}
+            {% endfor %}
+            <th class="total-col">Toplam</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student_idx in range(student_count) %}
+            <tr class="student-row">
+              <td>{{ student_idx + 1 }}</td>
+              <td><input type="text" name="student_number_{{ student_idx }}" placeholder="Öğr. No" style="width:95%;" value="{{ students_data[student_idx].number if students_data[student_idx] else '' }}"></td>
+              <td><input type="text" name="student_name_{{ student_idx }}" placeholder="Ad Soyad" style="width:95%;" value="{{ students_data[student_idx].name if students_data[student_idx] else '' }}"></td>
+              {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %} 
+                <td>
+                  <input type="number" 
+                         class="grade-input" 
+                         name="grade_{{ student_idx }}_{{ q_flat.global_question_idx }}" 
+                         min="0" 
+                         max="{{ q_flat.max_points }}" 
+                         step="0.5"
+                         data-student="{{ student_idx }}" 
+                         data-question="{{ q_flat.global_question_idx }}"
+                         value="{{ students_data[student_idx].grades[q_flat.global_question_idx] if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx else '' }}"
+                         style="width:40px;">
+                </td>
+                {% endif %}
+              {% endfor %}
+              <td><input type="text" class="exam-total-input" data-student="{{ student_idx }}" data-exam="{{ exam_idx }}" readonly style="width:50px;" value=""></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="stats-row">
+            <th>Max</th>
+            <td colspan="2"></td>
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td><input type="text" class="max-q" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                {% endif %}
+            {% endfor %}
+            <td><input type="text" class="max-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+          </tr>
+          
+          <tr class="stats-row">
+            <th>Min</th>
+            <td colspan="2"></td>
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td><input type="text" class="min-q" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                {% endif %}
+            {% endfor %}
+            <td><input type="text" class="min-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+          </tr>
+          
+          <tr class="stats-row">
+            <th>Ortalama</th>
+            <td colspan="2"></td>
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td><input type="text" class="avg-q" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                {% endif %}
+            {% endfor %}
+            <td><input type="text" class="avg-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+          </tr>
+          
+          <tr class="stats-row">
+            <th>Medyan</th>
+            <td colspan="2"></td>
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td><input type="text" class="median-q" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                {% endif %}
+            {% endfor %}
+            <td><input type="text" class="median-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+          </tr>
+          
+          <tr class="total-points-row">
+            <th>Toplam</th>
+            <td colspan="2"></td>
+            {% set current_exam_total_possible_points = 0 %}
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td>{{ q_flat.max_points }}</td>
+                    {% set current_exam_total_possible_points = current_exam_total_possible_points + q_flat.max_points %}
+                {% endif %}
+            {% endfor %}
+            <td>{{ current_exam_total_possible_points }}</td> 
+          </tr>
+          
+          <tr class="performance-row">
+            <th colspan="3">Öğrenci Performans Medyanı (%)</th>
+            {% for q_flat in all_questions_flat %}
+                {% if q_flat.exam_idx == exam_idx %}
+                    <td><input type="text" class="performance-median" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                {% endif %}
+            {% endfor %}
+            <td><input type="text" class="performance-median-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  {% endfor %}
+
+  <br>
+  <input type="submit" value="Kaydet ve Özet Görüntüle" class="submit-btn">
+</form>
+
+<script>
+const examsData = JSON.parse('{{ exams | tojson | safe }}');
+const studentCount = JSON.parse('{{ student_count | tojson | safe }}');
+const allQuestionsFlat = JSON.parse('{{ all_questions_flat | tojson | safe }}'); 
+
+
+function getColumnValues(globalColIdx) {
+  let vals = [];
+  for (let i = 0; i < studentCount; i++) {
+    let inp = document.querySelector(`input[name='grade_${i}_${globalColIdx}']`);
+    if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+      vals.push(parseFloat(inp.value));
+    }
+  }
+  return vals;
+}
+
+function getExamTotalValues(examIdx) {
+    let vals = [];
+    for (let studentIdx = 0; studentIdx < studentCount; studentIdx++) {
+        let total = 0;
+        allQuestionsFlat.filter(q => q.exam_idx === examIdx).forEach(q => {
+            let inp = document.querySelector(`input[name='grade_${studentIdx}_${q.global_question_idx}']`);
+            if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+                total += parseFloat(inp.value);
+            }
+        });
+        if (!isNaN(total)) {
+            vals.push(total);
+        }
+    }
+    return vals;
+}
+
+function calcStats(arr) {
+  if (arr.length === 0) return {max: '', min: '', avg: '', median: ''};
+  
+  let sorted = [...arr].sort((a,b) => a - b);
+  let sum = arr.reduce((a,b) => a + b, 0);
+  let avg = sum / arr.length;
+  let median = arr.length % 2 === 1 
+    ? sorted[Math.floor(arr.length / 2)]
+    : (sorted[arr.length / 2 - 1] + sorted[arr.length / 2]) / 2;
+    
+  return {
+    max: Math.max(...arr),
+    min: Math.min(...arr),
+    avg: parseFloat(avg.toFixed(1)),
+    median: parseFloat(median.toFixed(1))
+  };
+}
+
+function calculatePerformanceMedianForQuestion(globalQuestionIdx, questionMaxPoints) {
+  let vals = getColumnValues(globalQuestionIdx);
+  if (vals.length === 0 || questionMaxPoints === 0) return '';
+  
+  let sortedVals = [...vals].sort((a,b) => a - b);
+  let medianValue = sortedVals.length % 2 === 1 
+    ? sortedVals[Math.floor(sortedVals.length / 2)]
+    : (sortedVals[sortedVals.length / 2 - 1] + sortedVals[sortedVals.length / 2]) / 2;
+  
+  let performanceMedian = (medianValue / questionMaxPoints) * 100;
+  
+  return parseFloat(performanceMedian.toFixed(2));
+}
+
+function calculateExamPerformanceMedian(examIdx) {
+    let studentExamTotals = getExamTotalValues(examIdx);
+    if (studentExamTotals.length === 0) return '';
+
+    const currentExamTotalPossiblePoints = allQuestionsFlat
+        .filter(q => q.exam_idx === examIdx)
+        .reduce((sum, q) => sum + q.max_points, 0);
+
+    if (currentExamTotalPossiblePoints === 0) return '';
+
+    let sortedStudentExamTotals = [...studentExamTotals].sort((a,b) => a - b);
+    let medianExamTotalValue = sortedStudentExamTotals.length % 2 === 1 
+      ? sortedStudentExamTotals[Math.floor(sortedStudentExamTotals.length / 2)]
+      : (sortedStudentExamTotals[sortedStudentExamTotals.length / 2 - 1] + sortedStudentExamTotals[sortedStudentExamTotals.length / 2]) / 2;
+        
+    let performanceMedian = (medianExamTotalValue / currentExamTotalPossiblePoints) * 100;
+    return parseFloat(performanceMedian.toFixed(2));
+}
+
+
+function recalcCurrentTabStats() {
+    const activeTabContent = document.querySelector('.tab-content.active');
+    if (!activeTabContent) return; 
+
+    const activeTabId = activeTabContent.id;
+    const activeExamIdx = parseInt(activeTabId.replace('exam-', ''));
+    
+    const currentExamQuestions = allQuestionsFlat.filter(q => q.exam_idx === activeExamIdx);
+
+    for (let i = 0; i < studentCount; i++) {
+        let total = 0;
+        currentExamQuestions.forEach(q => {
+            let inp = document.querySelector(`input[name='grade_${i}_${q.global_question_idx}']`);
+            if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+                total += parseFloat(inp.value);
+            }
+        });
+        let totalInput = document.querySelector(`.exam-total-input[data-student='${i}'][data-exam='${activeExamIdx}']`);
+        if (totalInput) {
+            totalInput.value = total.toFixed(1); 
+        }
+    }
+    
+    for (let q = 0; q < currentExamQuestions.length; q++) {
+        let globalQIdx = currentExamQuestions[q].global_question_idx;
+        let vals = getColumnValues(globalQIdx);
+        let stats = calcStats(vals);
+        
+        let maxInput = activeTabContent.querySelector(`.max-q[data-question='${globalQIdx}']`);
+        let minInput = activeTabContent.querySelector(`.min-q[data-question='${globalQIdx}']`);
+        let avgInput = activeTabContent.querySelector(`.avg-q[data-question='${globalQIdx}']`);
+        let medianInput = activeTabContent.querySelector(`.median-q[data-question='${globalQIdx}']`);
+        
+        if (maxInput) maxInput.value = stats.max !== '' ? stats.max.toFixed(1) : '';
+        if (minInput) minInput.value = stats.min !== '' ? stats.min.toFixed(1) : '';
+        if (avgInput) avgInput.value = stats.avg !== '' ? stats.avg.toFixed(1) : '';
+        if (medianInput) medianInput.value = stats.median !== '' ? stats.median.toFixed(1) : '';
+        
+        let perfMedian = calculatePerformanceMedianForQuestion(globalQIdx, currentExamQuestions[q].max_points);
+        let perfInput = activeTabContent.querySelector(`.performance-median[data-question='${globalQIdx}']`);
+        if (perfInput) perfInput.value = perfMedian !== '' ? perfMedian.toFixed(2) : '';
+    }
+    
+    let examTotalVals = getExamTotalValues(activeExamIdx);
+    let tStats = calcStats(examTotalVals);
+    
+    let maxTotalInput = activeTabContent.querySelector(`.max-exam-total[data-exam='${activeExamIdx}']`);
+    let minTotalInput = activeTabContent.querySelector(`.min-exam-total[data-exam='${activeExamIdx}']`);
+    let avgTotalInput = activeTabContent.querySelector(`.avg-exam-total[data-exam='${activeExamIdx}']`);
+    let medianTotalInput = activeTabContent.querySelector(`.median-exam-total[data-exam='${activeExamIdx}']`);
+    
+    if (maxTotalInput) maxTotalInput.value = tStats.max !== '' ? tStats.max.toFixed(1) : '';
+    if (minTotalInput) minTotalInput.value = tStats.min !== '' ? tStats.min.toFixed(1) : '';
+    if (avgTotalInput) avgTotalInput.value = tStats.avg !== '' ? tStats.avg.toFixed(1) : '';
+    if (medianTotalInput) medianTotalInput.value = tStats.median !== '' ? tStats.median.toFixed(1) : '';
+
+    let examPerfMedian = calculateExamPerformanceMedian(activeExamIdx);
+    let perfExamTotalInput = activeTabContent.querySelector(`.performance-median-exam-total[data-exam='${activeExamIdx}']`);
+    if (perfExamTotalInput) perfExamTotalInput.value = examPerfMedian !== '' ? examPerfMedian.toFixed(2) : '';
+}
+
+function openTab(event, tabId) {
+  document.querySelectorAll('.tab-content').forEach(tabContent => {
+    tabContent.classList.remove('active');
+  });
+
+  document.querySelectorAll('.tab-button').forEach(tabButton => {
+    tabButton.classList.remove('active');
+  });
+
+  document.getElementById(tabId).classList.add('active');
+
+  event.currentTarget.classList.add('active');
+
+  recalcCurrentTabStats();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', (event) => {
+      openTab(event, button.dataset.tab);
+    });
+  });
+
+  document.querySelectorAll('.grade-input').forEach(function(inp) {
+    inp.addEventListener('input', recalcCurrentTabStats);
+    inp.addEventListener('change', recalcCurrentTabStats);
+  });
+  
+  setTimeout(recalcCurrentTabStats, 100); 
+});
+</script>
+</body>
+</html>
