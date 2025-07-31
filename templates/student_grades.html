@@ -139,7 +139,7 @@ input[readonly] {
                          step="0.5"
                          data-student="{{ student_idx }}" 
                          data-question="{{ q_flat.global_question_idx }}"
-                         value="{{ students_data[student_idx].grades[q_flat.global_question_idx] if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx else '' }}"
+                         value="{% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx and students_data[student_idx].grades[q_flat.global_question_idx] != 0 %}{{ students_data[student_idx].grades[q_flat.global_question_idx] }}{% else %}{% endif %}"
                          style="width:40px;">
                 </td>
                 {% endif %}

@@ -3,6 +3,7 @@ import numpy as np
 
 app = Flask(__name__)
 app.secret_key = "cok_guclu_bir_gizli_anahtar_buraya_yazilacak_mutlaka_degistirin" 
+
 # ROUTES
 @app.route("/", methods=["GET", "POST"])
 def main():
@@ -69,8 +70,8 @@ def clo_details():
                 "name": request.form[f"clo_name_{i}"]
             })
         session["clos"] = clos
-        return redirect(url_for("student_grades"))
-    
+        return redirect(url_for("student_grades"))  # Buradan student_grades'e yönlendir
+
     clo_count_from_session = session.get("clos")
     if clo_count_from_session is not None:
         clo_count = len(clo_count_from_session)
@@ -78,168 +79,6 @@ def clo_details():
         clo_count = 1 
 
     return render_template("clo_details.html", clo_count=clo_count, enumerate=enumerate)
-
-@app.route("/bloom_level_mapping", methods=["GET", "POST"])
-def bloom_level_mapping():
-    exams = session.get("exams")
-    clos = session.get("clos")
-    students_data = session.get("students", []) 
-    question_points_nested = session.get("question_points")
-    student_count = session.get("student_count") 
-
-    if not exams or not clos or not question_points_nested:
-        # Eğer gerekli oturum verileri yoksa, başlangıç sayfasına yönlendir
-        return redirect(url_for("main"))
-
-    all_questions_flat = []
-    global_q_idx_counter = 0
-    all_questions_flat_map = {} 
-    for exam_idx, exam in enumerate(exams):
-        all_questions_flat_map[exam_idx] = {}
-        for q_idx_in_exam in range(int(exam['question_count'])):
-            max_points = 0
-            if question_points_nested and len(question_points_nested) > exam_idx and \
-               len(question_points_nested[exam_idx]) > q_idx_in_exam:
-                max_points = question_points_nested[exam_idx][q_idx_in_exam]
-
-            all_questions_flat.append({
-                'exam_idx': exam_idx,
-                'question_idx_in_exam': q_idx_in_exam,
-                'global_question_idx': global_q_idx_counter,
-                'max_points': max_points
-            })
-            all_questions_flat_map[exam_idx][q_idx_in_exam] = global_q_idx_counter
-            global_q_idx_counter += 1
-
-    # clo_q_data'yı oturumdan çek, yoksa boş bir sözlük olarak başlat
-    clo_q_data = session.get("clo_q_data", {})
-
-    # GET isteğinde veya ilk yüklemede SPM değerlerini ve varsayılan boş string değerlerini ayarla
-    for clo_idx, clo in enumerate(clos):
-        if clo_idx not in clo_q_data:
-            clo_q_data[clo_idx] = {}
-        for q_flat in all_questions_flat:
-            global_q_idx = q_flat['global_question_idx']
-            
-            grades_for_q = []
-            for student in students_data:
-                # `student`'ın bir dict olduğunu ve 'grades' key'inin varlığını kontrol et
-                if isinstance(student, dict) and student.get('grades') and global_q_idx < len(student['grades']):
-                    grade = student['grades'][global_q_idx]
-                    if grade is not None:
-                        grades_for_q.append(grade)
-            
-            spm_value = 0
-            if grades_for_q and q_flat['max_points'] > 0:
-                # NumPy'nin median fonksiyonunu kullanmak için liste boş değilse
-                if len(grades_for_q) > 0:
-                    median_grade = float(np.median(grades_for_q))
-                    spm_value = (median_grade / q_flat['max_points']) * 100
-                else:
-                    spm_value = 0 # If no grades, SPM is 0
-
-            if global_q_idx not in clo_q_data[clo_idx]:
-                clo_q_data[clo_idx][global_q_idx] = {}
-            
-            clo_q_data[clo_idx][global_q_idx]['spm'] = round(spm_value, 2)
-            
-            # İlk yüklemede (GET request) veya değerler zaten POST ile gelmemişse
-            # input alanlarının boş string olarak başlamasını sağla.
-            # float(None) hatasını engellemek için None yerine '' atıyoruz.
-            if request.method == "GET":
-                if 'qct' not in clo_q_data[clo_idx][global_q_idx] or clo_q_data[clo_idx][global_q_idx]['qct'] is None:
-                    clo_q_data[clo_idx][global_q_idx]['qct'] = ''
-                if 'w' not in clo_q_data[clo_idx][global_q_idx] or clo_q_data[clo_idx][global_q_idx]['w'] is None:
-                    clo_q_data[clo_idx][global_q_idx]['w'] = ''
-                if 'bl' not in clo_q_data[clo_idx][global_q_idx] or clo_q_data[clo_idx][global_q_idx]['bl'] is None:
-                    clo_q_data[clo_idx][global_q_idx]['bl'] = ''
-
-    # POST isteği geldiğinde form verilerini işle
-    if request.method == "POST":
-        for clo_idx, clo in enumerate(clos):
-            if clo_idx not in clo_q_data:
-                clo_q_data[clo_idx] = {}
-            for q_flat in all_questions_flat:
-                global_q_idx = q_flat['global_question_idx']
-                qct_val = request.form.get(f"qct_{clo_idx}_{global_q_idx}")
-                w_val = request.form.get(f"w_{clo_idx}_{global_q_idx}")
-                bl_val = request.form.get(f"bl_{clo_idx}_{global_q_idx}")
-                
-                # Değerleri float'a çevir, boşsa None olarak sakla
-                clo_q_data[clo_idx][global_q_idx]['qct'] = float(qct_val) if qct_val else None
-                clo_q_data[clo_idx][global_q_idx]['w'] = float(w_val) if w_val else None
-                clo_q_data[clo_idx][global_q_idx]['bl'] = float(bl_val) if bl_val else None
-        
-        session["clo_q_data"] = clo_q_data 
-        
-    # Hesaplamaları yap
-    clo_results = {}
-    total_clo_results = {
-        'total_max_clo_score': 0,
-        'total_weighted_clo_score': 0,
-        'total_normalized_clo_score': 0,
-        'total_max_bloom_score': 0,
-        'total_weighted_bloom_score': 0,
-        'total_average_bloom_score': 0
-    }
-    
-    for clo_idx, clo in enumerate(clos):
-        max_clo_score = 0.0
-        weighted_clo_score = 0.0
-        max_bloom_score = 0.0
-        weighted_bloom_score = 0.0
-        
-        for q_flat in all_questions_flat:
-            global_q_idx = q_flat['global_question_idx']
-            q_data = clo_q_data.get(clo_idx, {}).get(global_q_idx, {})
-            
-            # Değerleri float'a çevir, yoksa 0 olarak varsay
-            qct = float(q_data.get('qct') or 0.0)
-            w = float(q_data.get('w') or 0.0)
-            bl = float(q_data.get('bl') or 0.0)
-            spm = float(q_data.get('spm') or 0.0)
-
-            max_clo_score += (qct / 100.0) * w
-            weighted_clo_score += (qct / 100.0) * w * spm
-            max_bloom_score += (qct / 100.0) * w * bl
-            weighted_bloom_score += (qct / 100.0) * w * bl
-
-        normalized_clo_score = (weighted_clo_score / max_clo_score) if max_clo_score > 0 else 0.0
-        average_bloom_score = (weighted_bloom_score / max_clo_score) if max_clo_score > 0 else 0.0
-
-        clo_results[clo_idx] = {
-            'max_clo_score': max_clo_score,
-            'weighted_clo_score': weighted_clo_score,
-            'normalized_clo_score': normalized_clo_score,
-            'max_bloom_score': max_bloom_score,
-            'weighted_bloom_score': weighted_bloom_score,
-            'average_bloom_score': average_bloom_score
-        }
-
-        total_clo_results['total_max_clo_score'] += max_clo_score
-        total_clo_results['total_weighted_clo_score'] += weighted_clo_score
-        total_clo_results['total_normalized_clo_score'] += normalized_clo_score
-        total_clo_results['total_max_bloom_score'] += max_bloom_score
-        total_clo_results['total_weighted_bloom_score'] += weighted_bloom_score
-        total_clo_results['total_average_bloom_score'] += average_bloom_score
-    
-    session["clo_results"] = clo_results
-    session["total_clo_results"] = total_clo_results
-
-    return render_template(
-        "bloom_mapping.html",
-        exams=exams,
-        clos=clos,
-        all_questions_flat=all_questions_flat,
-        all_questions_flat_map=all_questions_flat_map,
-        clo_q_data=clo_q_data,
-        clo_results=clo_results,
-        total_clo_results=total_clo_results,
-        students_data=students_data,
-        student_count=student_count,
-        enumerate=enumerate
-    )
-
 @app.route("/student_grades", methods=["GET", "POST"])
 def student_grades():
     exams = session.get("exams")
@@ -271,27 +110,23 @@ def student_grades():
     students_data = session.get('students', [])
     
     # students_data'nın öğrenci sayısı kadar boş veya mevcut öğrenci nesneleri içermesini sağla
-    # Bu döngü, students_data listesinin her zaman student_count boyutunda olmasını sağlar
-    # ve mevcut öğrenci verilerini korurken eksik olanları boş bir dict ile doldurur.
     current_students_data_length = len(students_data)
     if current_students_data_length < student_count:
         for i in range(current_students_data_length, student_count):
             students_data.append({
                 "number": "",
                 "name": "",
-                "grades": [0.0] * len(all_questions_flat_for_jinja),
+                "grades": [''] * len(all_questions_flat_for_jinja),
                 "total": 0.0
             })
     elif current_students_data_length > student_count:
         students_data = students_data[:student_count]
-
 
     if request.method == "POST":
         students = []
         total_questions_count = len(all_questions_flat_for_jinja)
 
         for student_idx in range(int(student_count)):
-            # Önceki verileri korumak için, eğer öğrenci zaten varsa mevcut verilerini kullan
             current_student_data = students_data[student_idx] if student_idx < len(students_data) else {
                 "number": "", "name": "", "grades": [0.0] * total_questions_count, "total": 0.0
             }
@@ -313,7 +148,6 @@ def student_grades():
                 student_grades_list[q_flat['global_question_idx']] = grade_value
                 current_student_total_score += grade_value
 
-
             students.append({
                 "number": student_number,
                 "name": student_name,
@@ -333,6 +167,97 @@ def student_grades():
                             enumerate=enumerate,
                             clos=clos)
 
+@app.route("/bloom_level_mapping", methods=["GET", "POST"])
+def bloom_level_mapping():
+    exams = session.get("exams", [])
+    clos = session.get("clos", [])
+    question_points_nested = session.get("question_points", [])
+
+    # Tüm soruların global indexlerini oluştur
+    all_questions_flat_map = []
+    global_q_idx_counter = 0
+    for exam_idx, exam in enumerate(exams):
+        exam_map = []
+        for q_idx_in_exam in range(int(exam['question_count'])):
+            exam_map.append(global_q_idx_counter)
+            global_q_idx_counter += 1
+        all_questions_flat_map.append(exam_map)
+
+    # Varsayılan değerlerle başlat
+    clo_q_data = session.get("clo_q_data", [])
+    clo_results = session.get("clo_results", [])
+    total_clo_results = session.get("total_clo_results", {})
+
+    if request.method == "POST":
+        # Formdan gelen verileri işle
+        clo_q_data = []
+        for clo_idx in range(len(clos)):
+            clo_row = {}
+            for exam_idx, exam in enumerate(exams):
+                for q in range(exam["question_count"]):
+                    global_q_idx = all_questions_flat_map[exam_idx][q]
+                    
+                    qct_val = request.form.get(f"qct_{clo_idx}_{global_q_idx}")
+                    w_val = request.form.get(f"w_{clo_idx}_{global_q_idx}")
+                    spm_val = request.form.get(f"spm_{clo_idx}_{global_q_idx}")
+                    bl_val = request.form.get(f"bl_{clo_idx}_{global_q_idx}")
+
+                    qct = float(qct_val.strip()) if qct_val and qct_val.strip() else 0.0
+                    w = float(w_val.strip()) if w_val and w_val.strip() else 0.0
+                    spm = float(spm_val.strip()) if spm_val and spm_val.strip() else 0.0
+                    bl = float(bl_val.strip()) if bl_val and bl_val.strip() else 0.0
+                    clo_row[global_q_idx] = {"qct": qct, "w": w, "spm": spm, "bl": bl}
+            clo_q_data.append(clo_row)
+
+        # Her CLO için hesaplamaları yap
+        clo_results = []
+        for clo_idx, clo in enumerate(clos):
+            qct_list, w_list, spm_list, bl_list = [], [], [], []
+            for exam_idx, exam in enumerate(exams):
+                for q in range(exam["question_count"]):
+                    global_q_idx = all_questions_flat_map[exam_idx][q]
+                    qct = clo_q_data[clo_idx][global_q_idx]['qct']
+                    w = clo_q_data[clo_idx][global_q_idx]['w']
+                    spm = clo_q_data[clo_idx][global_q_idx]['spm']
+                    bl = clo_q_data[clo_idx][global_q_idx]['bl']
+                    qct_list.append(qct)
+                    w_list.append(w)
+                    spm_list.append(spm)
+                    bl_list.append(bl)
+            
+            clo_results.append({
+                "max_clo_score": max_possible_clo_score(qct_list, w_list),
+                "weighted_clo_score": weighted_clo_score(qct_list, w_list, spm_list),
+                "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list),
+                "weighted_bloom_score": weighted_bloom_score(qct_list, w_list, bl_list),
+                "average_bloom_score": average_bloom_score(qct_list, w_list, bl_list)
+            })
+
+        # Toplam değerleri hesapla
+        total_clo_results = {
+            "total_max_clo_score": sum(r["max_clo_score"] for r in clo_results),
+            "total_weighted_clo_score": sum(r["weighted_clo_score"] for r in clo_results),
+            "total_normalized_clo_score": sum(r["normalized_clo_score"] for r in clo_results),
+            "total_average_bloom_score": sum(r["average_bloom_score"] for r in clo_results),
+            "total_weighted_bloom_score": sum(r["weighted_bloom_score"] for r in clo_results)
+        }
+
+        # Session'a kaydet
+        session["clo_q_data"] = clo_q_data
+        session["clo_results"] = clo_results
+        session["total_clo_results"] = total_clo_results
+
+    return render_template(
+        "bloom_mapping.html",
+        exams=exams,
+        clos=clos,
+        all_questions_flat_map=all_questions_flat_map,
+        clo_q_data=clo_q_data,
+        clo_results=clo_results,
+        total_clo_results=total_clo_results,
+        enumerate=enumerate
+    )
+
 @app.route("/summary")
 def summary():
     exam_count = session.get("exam_count")
@@ -351,5 +276,27 @@ def summary():
                             clos=clos,
                             enumerate=enumerate) 
 
+# CALCULATION FUNCTIONS
+def max_possible_clo_score(qct_list, w_list):
+    return sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+
+def weighted_clo_score(qct_list, w_list, spm_list):
+    return sum((qct / 100) * w * (spm / 100) for qct, w, spm in zip(qct_list, w_list, spm_list))
+
+def normalized_clo_score(qct_list, w_list, spm_list):
+    numerator = sum((qct / 100) * w * spm for qct, w, spm in zip(qct_list, w_list, spm_list))
+    denominator = sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+    return numerator / denominator if denominator != 0 else 0
+
+def weighted_bloom_score(qct_list, w_list, bl_list):
+    return sum((qct / 100) * w * bl for qct, w, bl in zip(qct_list, w_list, bl_list))
+
+def average_bloom_score(qct_list, w_list, bl_list):
+    # MW-BL'nin, Max CLO Score ile aynı formülle hesaplanması isteniyorsa,
+    # bl listesini dikkate almayıp bu formülü kullanın.
+    return sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+
 if __name__ == "__main__":
     app.run(port=8080, debug=True)
+
+    
