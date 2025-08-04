@@ -139,9 +139,12 @@
         }
         
         /* Button */
-        .submit-btn {
-            background: linear-gradient(135deg, #27ae60, #229954);
-            color: white;
+        .btn-group {
+            display: flex;
+            gap: 10px; /* Butonlar arasına boşluk ekler */
+            margin-top: 20px;
+        }
+        .submit-btn, .download-btn {
             padding: 12px 24px;
             border: none;
             border-radius: 6px;
@@ -149,10 +152,24 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-decoration: none; /* Linkin altını çizgisini kaldırır */
+            color: white;
+            display: inline-block;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #27ae60, #229954);
         }
         .submit-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+        .download-btn {
+            background: #007bff;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
         
         /* Responsive adjustments */
@@ -165,6 +182,8 @@
 </head>
 <body>
     <div class="container">
+    <h2>Bloom Taksonomi ve CLO Eşleştirme</h2>
+
         <form method="post">
             <table>
                 <!-- Main Headers -->
@@ -293,8 +312,11 @@
                     <td>{{ "%.2f"|format(total_clo_results.get('total_weighted_bloom_score', 0)) if total_clo_results else '0.00' }}</td>
                 </tr>
             </table>
-            
-            <button type="submit" class="submit-btn">Calculate Values & Save</button>
+        
+            <div class="btn-group">
+                <button type="submit" class="submit-btn">Calculate Values & Save</button>
+                <a href="{{ url_for('download_clo_csv') }}" class="download-btn">CLO Tablosunu İndir</a>
+            </div>
         </form>
 
         <!-- Formula Explanations -->

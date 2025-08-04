@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
+import pandas as pd
 import numpy as np 
 
 app = Flask(__name__)
@@ -275,6 +276,68 @@ def summary():
                             students=students,
                             clos=clos,
                             enumerate=enumerate) 
+
+@app.route("/download_csv")
+def download_csv():
+    students_data = session.get('students', [])
+    exams = session.get('exams', [])
+    question_points_nested = session.get('question_points', [])
+    
+    if not students_data:
+        return "Öğrenci verisi bulunamadı.", 404
+        
+    all_questions_flat = []
+    for exam in exams:
+        for q in range(int(exam['question_count'])):
+            all_questions_flat.append(f"Q_{exam['name']}_{q+1}")
+            
+    df_data = []
+    for student in students_data:
+        row = {
+            "Öğrenci No": student.get("number", ""),
+            "Ad-Soyad": student.get("name", "")
+        }
+        for i, grade in enumerate(student.get("grades", [])):
+            if i < len(all_questions_flat):
+                row[all_questions_flat[i]] = grade
+        row["Toplam Not"] = student.get("total", 0.0)
+        df_data.append(row)
+        
+    df = pd.DataFrame(df_data)
+
+    output = io.StringIO()
+    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
+
+    response = make_response(csv_output)
+    response.headers["Content-Disposition"] = "attachment; filename=student_grades.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+
+    return response
+
+@app.route("/download_clo_csv")
+def download_clo_csv():
+    clo_table = session.get('clo_table', [])
+    
+    if not clo_table:
+        return "CLO verisi bulunamadı.", 404
+        
+    df = pd.DataFrame(clo_table)
+    # 'id' sütununu çıkararak daha temiz bir tablo oluşturun
+    if 'id' in df.columns:
+        df = df.drop(columns=['id'])
+
+    output = io.StringIO()
+    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
+
+    response = make_response(csv_output)
+    response.headers["Content-Disposition"] = "attachment; filename=clo_details.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+
+    return response
 
 # CALCULATION FUNCTIONS
 def max_possible_clo_score(qct_list, w_list):
