@@ -158,6 +158,8 @@ def student_grades():
             })
         
         session["students"] = students
+        # yeni eklenen satır burada
+        session["question_points"] = question_points_nested
         return redirect(url_for("summary"))
 
     session["all_questions_flat"] = all_questions_flat_for_jinja 
@@ -276,23 +278,101 @@ def bloom_level_mapping():
         enumerate=enumerate
     )
 
+# ... (Diğer fonksiyonlar) ...
+
 @app.route("/summary")
 def summary():
-    exam_count = session.get("exam_count")
-    student_count = session.get("student_count")
     exams = session.get("exams")
-    question_points = session.get("question_points")
     students = session.get("students")
-    clos = session.get("clos") 
+    question_points = session.get("question_points")
+    
+    if not exams or not students or not question_points:
+        return redirect(url_for("main"))
 
-    return render_template("summary.html", 
-                            exam_count=exam_count, 
-                            student_count=student_count, 
-                            exams=exams, 
-                            question_points=question_points,
-                            students=students,
-                            clos=clos,
-                            enumerate=enumerate) 
+    # Sınav ağırlıklarını topla
+    total_weight = sum(exam['weight'] for exam in exams)
+
+    # Öğrenci genel puanlarını ve sınav toplamlarını hesapla
+    for student in students:
+        student['exam_totals'] = []
+        student['overall_total'] = 0.0
+        
+        q_idx_counter = 0
+        for exam_idx, exam in enumerate(exams):
+            exam_score = 0
+            for q_idx in range(int(exam['question_count'])):
+                exam_score += student['grades'][q_idx_counter]
+                q_idx_counter += 1
+            student['exam_totals'].append(round(exam_score, 2))
+            
+            if total_weight > 0:
+                student['overall_total'] += (exam_score * exam['weight']) / total_weight
+    
+    # Tüm sorular için istatistikleri (ortalama, medyan, vb.) hesapla
+    all_questions_flat = []
+    stats = []
+    exam_total_stats = []
+
+    global_q_idx_counter = 0
+    for exam_idx, exam in enumerate(exams):
+        exam_grades = []
+        total_possible_points_for_exam = 0
+        
+        for q_idx_in_exam in range(int(exam['question_count'])):
+            max_points = question_points[exam_idx][q_idx_in_exam]
+            total_possible_points_for_exam += max_points
+
+            all_questions_flat.append({
+                'exam_idx': exam_idx,
+                'question_idx_in_exam': q_idx_in_exam,
+                'global_question_idx': global_q_idx_counter,
+                'max_points': max_points
+            })
+            
+            grades_for_question = [s['grades'][global_q_idx_counter] for s in students]
+            grades_for_question = [g for g in grades_for_question if g is not None]
+            
+            if grades_for_question:
+                median_val = np.median(grades_for_question)
+                stats.append({
+                    'avg': round(np.mean(grades_for_question), 2),
+                    'median': round(median_val, 2),
+                    'max': round(np.max(grades_for_question), 2),
+                    'min': round(np.min(grades_for_question), 2),
+                    'performance_median': round((median_val / max_points) * 100, 2) if max_points > 0 else 0
+                })
+            else:
+                stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
+            
+            global_q_idx_counter += 1
+            exam_grades.extend(grades_for_question)
+        
+        # Her sınav için sınav toplamı istatistiklerini hesapla
+        exam_totals_list = [s['exam_totals'][exam_idx] for s in students]
+        exam_totals_list = [t for t in exam_totals_list if t is not None]
+
+        if exam_totals_list:
+            median_exam_total = np.median(exam_totals_list)
+            exam_total_stats.append({
+                'avg': round(np.mean(exam_totals_list), 2),
+                'median': round(median_exam_total, 2),
+                'max': round(np.max(exam_totals_list), 2),
+                'min': round(np.min(exam_totals_list), 2),
+                'performance_median': round((median_exam_total / total_possible_points_for_exam) * 100, 2) if total_possible_points_for_exam > 0 else 0
+            })
+        else:
+            exam_total_stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
+
+    return render_template(
+        "summary.html", 
+        exams=exams, 
+        students=students, 
+        all_questions_flat=all_questions_flat, 
+        stats=stats,
+        exam_total_stats=exam_total_stats,
+        question_points=question_points,
+        enumerate=enumerate
+    )
 
 @app.route("/download_csv/<int:exam_index>", methods=["POST"])
 def download_csv(exam_index):

@@ -96,7 +96,7 @@ input[readonly] {
 
 <a href="{{ url_for('bloom_level_mapping') }}" class="top-right-button">Bloom Level System</a>
 
-<form id="gradesForm">
+<form id="gradesForm" method="post">
   <div class="tabs">
     {% for exam_idx, exam in enumerate(exams) %}
       <button type="button" class="tab-button {% if loop.first %}active{% endif %}" 
