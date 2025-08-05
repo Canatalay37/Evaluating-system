@@ -96,11 +96,13 @@ input[readonly] {
 
 <a href="{{ url_for('bloom_level_mapping') }}" class="top-right-button">Bloom Level System</a>
 
-<form method='post'>
+<form id="gradesForm">
   <div class="tabs">
     {% for exam_idx, exam in enumerate(exams) %}
-      <button type="button" class="tab-button {% if loop.first %}active{% endif %}" data-tab="exam-{{ exam_idx }}">
-        {{ exam.name }}
+      <button type="button" class="tab-button {% if loop.first %}active{% endif %}" 
+        data-tab="exam-{{ exam_idx }}" 
+        data-exam-index="{{ exam_idx }}">
+    {{ exam.name }}  
       </button>
     {% endfor %}
   </div>
@@ -221,8 +223,8 @@ input[readonly] {
   {% endfor %}
 
   <br>
-  <input type="submit" value="Kaydet ve Özet Görüntüle" class="submit-btn">
-   <a href="{{ url_for('download_csv') }}" class="submit-btn" style="background-color: #28a745;">CSV İndir</a>
+<button type="submit" id="saveButton" class="submit-btn">Kaydet ve Özet Görüntüle</button>
+<button type="button" id="downloadCsvButton" class="submit-btn" style="background-color: #28a745;">CSV İndir</button>
 </form>
 
 <script>
@@ -373,19 +375,25 @@ function recalcCurrentTabStats() {
 }
 
 function openTab(event, tabId) {
-  document.querySelectorAll('.tab-content').forEach(tabContent => {
-    tabContent.classList.remove('active');
-  });
+    document.querySelectorAll('.tab-content').forEach(tabContent => {
+        tabContent.classList.remove('active');
+    });
 
-  document.querySelectorAll('.tab-button').forEach(tabButton => {
-    tabButton.classList.remove('active');
-  });
+    document.querySelectorAll('.tab-button').forEach(tabButton => {
+        tabButton.classList.remove('active');
+    });
 
-  document.getElementById(tabId).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
 
-  event.currentTarget.classList.add('active');
+    // Bu yeni kod bloğu ile indirme butonunun linki güncelleniyor
+    const examIndex = event.currentTarget.getAttribute('data-exam-index');
+    //burası değiştii
+    const form = document.getElementById('gradesForm');
+    form.action = `/student_grades`;
+    form.method = 'post';
 
-  recalcCurrentTabStats();
+    recalcCurrentTabStats();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -400,7 +408,23 @@ document.addEventListener('DOMContentLoaded', function() {
     inp.addEventListener('change', recalcCurrentTabStats);
   });
   
-  setTimeout(recalcCurrentTabStats, 100); 
+  // Sayfa yüklendiğinde ilk sekmenin linkini ayarlar
+  const downloadButton = document.getElementById('downloadCsvButton');
+  const form = document.getElementById('gradesForm');
+
+    if (downloadButton) {
+        downloadButton.addEventListener('click', function() {
+            const activeTabButton = document.querySelector('.tab-button.active');
+            if (activeTabButton) {
+                const examIndex = activeTabButton.getAttribute('data-exam-index');
+                form.action = `/download_csv/${examIndex}`;
+                form.method = 'post';
+                form.submit();
+            }
+        });
+    }
+
+    setTimeout(recalcCurrentTabStats, 100);
 });
 </script>
 </body>

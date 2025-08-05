@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 import pandas as pd
-import numpy as np 
+import numpy as np
+import io 
 
 app = Flask(__name__)
 app.secret_key = "cok_guclu_bir_gizli_anahtar_buraya_yazilacak_mutlaka_degistirin" 
@@ -159,6 +160,7 @@ def student_grades():
         session["students"] = students
         return redirect(url_for("summary"))
 
+    session["all_questions_flat"] = all_questions_flat_for_jinja 
     return render_template("student_grades.html", 
                             exams=exams, 
                             student_count=int(student_count),
@@ -188,6 +190,7 @@ def bloom_level_mapping():
     clo_q_data = session.get("clo_q_data", [])
     clo_results = session.get("clo_results", [])
     total_clo_results = session.get("total_clo_results", {})
+    clo_table_data = session.get("clo_table", [])
 
     if request.method == "POST":
         # Formdan gelen verileri işle
@@ -248,6 +251,20 @@ def bloom_level_mapping():
         session["clo_results"] = clo_results
         session["total_clo_results"] = total_clo_results
 
+        # İndirme için gerekli olan clo_table'ı oluşturup session'a kaydet
+        clo_table_data = []
+        for clo_idx, clo in enumerate(clos):
+            row = {
+                'CLO': clo['name'],
+                'Max CLO Score': clo_results[clo_idx]['max_clo_score'],
+                'CLO Score': clo_results[clo_idx]['weighted_clo_score'],
+                'MW-BL': clo_results[clo_idx]['average_bloom_score'],
+                'Weighted BL Sum': clo_results[clo_idx]['weighted_bloom_score']
+            }
+            clo_table_data.append(row)
+        
+        session['clo_table'] = clo_table_data
+
     return render_template(
         "bloom_mapping.html",
         exams=exams,
@@ -277,33 +294,36 @@ def summary():
                             clos=clos,
                             enumerate=enumerate) 
 
-@app.route("/download_csv")
-def download_csv():
-    students_data = session.get('students', [])
+@app.route("/download_csv/<int:exam_index>", methods=["POST"])
+def download_csv(exam_index):
     exams = session.get('exams', [])
-    question_points_nested = session.get('question_points', [])
-    
-    if not students_data:
-        return "Öğrenci verisi bulunamadı.", 404
-        
-    all_questions_flat = []
-    for exam in exams:
-        for q in range(int(exam['question_count'])):
-            all_questions_flat.append(f"Q_{exam['name']}_{q+1}")
-            
-    df_data = []
-    for student in students_data:
-        row = {
-            "Öğrenci No": student.get("number", ""),
-            "Ad-Soyad": student.get("name", "")
-        }
-        for i, grade in enumerate(student.get("grades", [])):
-            if i < len(all_questions_flat):
-                row[all_questions_flat[i]] = grade
-        row["Toplam Not"] = student.get("total", 0.0)
-        df_data.append(row)
-        
-    df = pd.DataFrame(df_data)
+    all_questions_flat = session.get('all_questions_flat', [])
+    student_count = session.get("student_count")
+
+    if not exams or not all_questions_flat:
+        return "Gerekli veriler oturumda bulunamadı.", 400
+
+    exam_name = exams[exam_index]['name']
+    exam_data = []
+    current_exam_questions = [q for q in all_questions_flat if q['exam_idx'] == exam_index]
+    total_questions_count = len(all_questions_flat)
+
+    for student_idx in range(int(student_count)):
+        student_row = {'Öğrenci No': request.form.get(f"student_number_{student_idx}", ''), 
+                       'Ad-Soyad': request.form.get(f"student_name_{student_idx}", '')}
+
+        total_grade_for_exam = 0.0
+        for q in current_exam_questions:
+            global_q_idx = q['global_question_idx']
+            grade_key = f"grade_{student_idx}_{global_q_idx}"
+            grade_value = float(request.form.get(grade_key, '0.0'))
+            student_row[f"Soru_{q['question_idx_in_exam'] + 1} ({q['max_points']})"] = grade_value
+            total_grade_for_exam += grade_value
+
+        student_row[f"{exam_name} Toplam"] = total_grade_for_exam
+        exam_data.append(student_row)
+
+    df = pd.DataFrame(exam_data)
 
     output = io.StringIO()
     df.to_csv(output, index=False, sep=';', encoding='utf-8')
@@ -311,7 +331,7 @@ def download_csv():
     csv_output = bom + output.getvalue()
 
     response = make_response(csv_output)
-    response.headers["Content-Disposition"] = "attachment; filename=student_grades.csv"
+    response.headers["Content-Disposition"] = f"attachment; filename={exam_name.replace(' ', '_')}_notlari.csv"
     response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
 
     return response
@@ -329,7 +349,7 @@ def download_clo_csv():
         df = df.drop(columns=['id'])
 
     output = io.StringIO()
-    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    df.to_csv(output, index=False, sep=';', encoding='utf-8', float_format='%.3f')
     bom = '\ufeff'
     csv_output = bom + output.getvalue()
 
