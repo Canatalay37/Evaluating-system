@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<title>Sınav Sonuçları Özeti</title>
+<title>Exam Results Summary</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; background-color: #f4f7f9; }
 h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
@@ -20,21 +20,21 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
 </head>
 <body>
 
-<h2>Sınav Sonuçları Özeti</h2>
+<h2>Exam Results Summary</h2>
 
 {% for exam_idx, exam in enumerate(exams) %}
-    <h3>{{ exam.name }} Sınavı</h3>
+    <h3>{{ exam.name }} Exam</h3>
     <table class="summary-table">
         <thead>
             <tr>
-                <th class="student-info-col">Öğrenci No</th>
-                <th class="student-info-col">Ad-Soyad</th>
+                <th class="student-info-col">Student No</th>
+                <th class="student-info-col">Name</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
-                        <th>Soru {{ question.question_idx_in_exam + 1 }}</th>
+                        <th>Question {{ question.question_idx_in_exam + 1 }}</th>
                     {% endif %}
                 {% endfor %}
-                <th class="total-col">Sınav Toplamı</th>
+                <th class="total-col">Exam Total</th>
             </tr>
         </thead>
         <tbody>
@@ -56,7 +56,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
         </tbody>
         <tfoot>
             <tr class="stats-row">
-                <th colspan="2">Ortalama</th>
+                <th colspan="2">Average</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['avg'] }}</td>
@@ -65,7 +65,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 <td class="total-col">{{ exam_total_stats[exam_idx]['avg'] }}</td>
             </tr>
             <tr class="stats-row">
-                <th colspan="2">Medyan</th>
+                <th colspan="2">Median</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['median'] }}</td>
@@ -74,7 +74,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 <td class="total-col">{{ exam_total_stats[exam_idx]['median'] }}</td>
             </tr>
             <tr class="stats-row">
-                <th colspan="2">En Yüksek</th>
+                <th colspan="2">Max</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['max'] }}</td>
@@ -83,7 +83,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 <td class="total-col">{{ exam_total_stats[exam_idx]['max'] }}</td>
             </tr>
             <tr class="stats-row">
-                <th colspan="2">En Düşük</th>
+                <th colspan="2">Min</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['min'] }}</td>
@@ -92,7 +92,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 <td class="total-col">{{ exam_total_stats[exam_idx]['min'] }}</td>
             </tr>
             <tr class="performance-row">
-                <th colspan="2">Öğrenci Performans Medyanı (%)</th>
+                <th colspan="2">Student Performance Median (%)</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['performance_median'] }}</td>
@@ -104,16 +104,16 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
     </table>
 {% endfor %}
 
-<h3>Genel Sonuçlar</h3>
+<h3>Overall Results</h3>
 <table class="summary-table">
     <thead>
         <tr>
-            <th class="student-info-col">Öğrenci No</th>
-            <th class="student-info-col">Ad-Soyad</th>
+            <th class="student-info-col">Student No</th>
+            <th class="student-info-col">Name</th>
             {% for exam in exams %}
                 <th>{{ exam.name }} Notu ({{ exam.weight }}%)</th>
             {% endfor %}
-            <th class="overall-col">Genel Toplam (100)</th>
+            <th class="overall-col">Overall Total (100)</th>
         </tr>
     </thead>
     <tbody>

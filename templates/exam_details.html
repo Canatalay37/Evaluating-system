@@ -11,18 +11,17 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 </style>
 </head>
 <body>
-<h2>Sınav Detayları</h2>
+<h2>Exam Details</h2>
 <form method="post">
   {% for i in range(exam_count) %}
     <div class="exam-section">
-      <h3>Sınav {{ i+1 }}</h3>
-      <label>Sınav Adı: <input type="text" name="exam_name_{{i}}" placeholder="Örn: Vize Sınavı" required></label><br>
-      <label>Soru Sayısı: <input type="number" name="question_count_{{i}}" min="1" max="50" required></label><br>
-      <label>Ağırlık (%): <input type="number" name="weight_{{i}}" min="1" max="100" required></label><br>
+      <h3>Exam {{ i+1 }}</h3>
+      <label>Exam Name: <input type="text" name="exam_name_{{i}}" placeholder="E.g: Midterm Exam" required></label><br>
+      <label>Question Count: <input type="number" name="question_count_{{i}}" min="1" max="50" required></label><br>
+      <label>Exam Weight (%): <input type="number" name="weight_{{i}}" min="1" max="100" required></label><br>
     </div>
   {% endfor %}
-  <input type="submit" value="Kaydet ve Devam Et">
+  <input type="submit" value="Save and Continue">
 </form>
 </body>
 </html>
-"""

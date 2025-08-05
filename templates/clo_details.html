@@ -11,18 +11,18 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 </style>
 </head>
 <body>
-<h2>Ders Öğrenim Çıktıları (CLO) Detayları</h2>
+<h2>Course Learning Outcomes (CLO) Details</h2>
 <form method="post">
-  <label>Kaç adet CLO var? <input type="number" name="clo_count" min="1" max="20" value="{{ clo_count }}" required></label><br><br>
+  <label>How many CLOs are there? <input type="number" name="clo_count" min="1" max="20" value="{{ clo_count }}" required></label><br><br>
   <div id="clo_names_container">
     {% for i in range(clo_count) %}
       <div class="clo-section">
         <h3>CLO {{ i+1 }}</h3>
-        <label>CLO Adı: <input type="text" name="clo_name_{{i}}" placeholder="Örn: CLO{{i+1}}" required></label><br>
+        <label>CLO Name: <input type="text" name="clo_name_{{i}}" placeholder="E.g: CLO{{i+1}}" required></label><br>
       </div>
     {% endfor %}
   </div>
-  <input type="submit" value="Kaydet ve Devam Et">
+  <input type="submit" value="Save and Continue">
 </form>
 <script>
     document.querySelector('input[name="clo_count"]').addEventListener('input', function() {
@@ -45,4 +45,3 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 </script>
 </body>
 </html>
-"""

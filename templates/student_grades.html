@@ -92,7 +92,7 @@ input[readonly] {
 </style>
 </head>
 <body>
-<h2>Öğrenci Bilgileri ve Not Girişi</h2>
+<h2>Student Information and Grade Entry</h2>
 
 <a href="{{ url_for('bloom_level_mapping') }}" class="top-right-button">Bloom Level System</a>
 
@@ -109,27 +109,27 @@ input[readonly] {
 
   {% for exam_idx, exam in enumerate(exams) %}
     <div id="exam-{{ exam_idx }}" class="tab-content {% if loop.first %}active{% endif %}">
-      <h3>{{ exam.name }} Sınavı Not Girişi</h3>
+      <h3>{{ exam.name }} exam grade entry</h3>
       <table>
         <thead>
           <tr>
             <th class="id-col">ID</th>
-            <th class="student-info-col">Öğrenci No</th>
-            <th class="student-info-col">Ad-Soyad</th>
+            <th class="student-info-col">Student No</th>
+            <th class="student-info-col">Name</th>
             {% for q_flat in all_questions_flat %}
               {% if q_flat.exam_idx == exam_idx %} 
-                <th class="question-col">Soru {{ q_flat.question_idx_in_exam + 1 }}</th>
+                <th class="question-col">Question {{ q_flat.question_idx_in_exam + 1 }}</th>
               {% endif %}
             {% endfor %}
-            <th class="total-col">Toplam</th>
+            <th class="total-col">Total</th>
           </tr>
         </thead>
         <tbody>
           {% for student_idx in range(student_count) %}
             <tr class="student-row">
               <td>{{ student_idx + 1 }}</td>
-              <td><input type="text" name="student_number_{{ student_idx }}" placeholder="Öğr. No" style="width:95%;" value="{{ students_data[student_idx].number if students_data[student_idx] else '' }}"></td>
-              <td><input type="text" name="student_name_{{ student_idx }}" placeholder="Ad Soyad" style="width:95%;" value="{{ students_data[student_idx].name if students_data[student_idx] else '' }}"></td>
+              <td><input type="text" name="student_number_{{ student_idx }}" placeholder="Std. No" style="width:95%;" value="{{ students_data[student_idx].number if students_data[student_idx] else '' }}"></td>
+              <td><input type="text" name="student_name_{{ student_idx }}" placeholder="Name" style="width:95%;" value="{{ students_data[student_idx].name if students_data[student_idx] else '' }}"></td>
               {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %} 
                 <td>
@@ -174,7 +174,7 @@ input[readonly] {
           </tr>
           
           <tr class="stats-row">
-            <th>Ortalama</th>
+            <th>Average</th>
             <td colspan="2"></td>
             {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %}
@@ -185,7 +185,7 @@ input[readonly] {
           </tr>
           
           <tr class="stats-row">
-            <th>Medyan</th>
+            <th>Median</th>
             <td colspan="2"></td>
             {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %}
@@ -196,7 +196,7 @@ input[readonly] {
           </tr>
           
           <tr class="total-points-row">
-            <th>Toplam</th>
+            <th>Total</th>
             <td colspan="2"></td>
             {% set current_exam_total_possible_points = 0 %}
             {% for q_flat in all_questions_flat %}
@@ -209,7 +209,7 @@ input[readonly] {
           </tr>
           
           <tr class="performance-row">
-            <th colspan="3">Öğrenci Performans Medyanı (%)</th>
+            <th colspan="3">Student Performance Median (%)</th>
             {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %}
                     <td><input type="text" class="performance-median" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
@@ -223,8 +223,8 @@ input[readonly] {
   {% endfor %}
 
   <br>
-<button type="submit" id="saveButton" class="submit-btn">Kaydet ve Özet Görüntüle</button>
-<button type="button" id="downloadCsvButton" class="submit-btn" style="background-color: #28a745;">CSV İndir</button>
+<button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
+<button type="button" id="downloadCsvButton" class="submit-btn" style="background-color: #28a745;">Download CSV</button>
 </form>
 
 <script>

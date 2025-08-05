@@ -4,7 +4,7 @@ import numpy as np
 import io 
 
 app = Flask(__name__)
-app.secret_key = "cok_guclu_bir_gizli_anahtar_buraya_yazilacak_mutlaka_degistirin" 
+app.secret_key = "your_secret_key_here" 
 
 # ROUTES
 @app.route("/", methods=["GET", "POST"])
