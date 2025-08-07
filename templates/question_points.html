@@ -14,17 +14,73 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 <body>
 <h2>Question Points</h2>
 <form method="post">
+  <div class="exam-section">
+    <h3>CLO İsimleri:</h3>
+    <div style="margin-bottom: 16px;">
+      {% for i in range(10) %} {# Maksimum 10 CLO #}
+        <input type="text" name="clo_name_{{i}}" placeholder="CLO {{i+1}} Adı" style="margin-right:8px; margin-bottom:4px; width:140px;">
+      {% endfor %}
+    </div>
+  </div>
   {% for exam_idx, exam in enumerate(exams) %}
     <div class="exam-section">
       <h3>{{ exam['name'] }}</h3>
       <div class="question-grid">
         {% for q in range(exam['question_count']|int) %}
-          <label>Soru {{ q+1 }}: <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required></label>
+          <div style="border:1px solid #eee; border-radius:4px; padding:8px; margin-bottom:8px; background:#fafbfc;">
+            <label>Soru {{ q+1 }} Puanı:
+              <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
+            </label><br>
+            <label>CLO:
+              {% for clo_idx in range(1, 11) %}
+                <label style="display:inline-block; margin-right:8px;">
+                  <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ clo_idx }}"> {{ clo_idx }}
+                </label>
+              {% endfor %}
+            </label><br>
+            <label>QCT (%):
+              <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required>
+            </label><br>
+            <label>BL:
+              <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required>
+            </label>
+          </div>
         {% endfor %}
       </div>
     </div>
   {% endfor %}
   <input type="submit" value="Kaydet ve Devam Et">
 </form>
+<hr style="margin-top:32px;">
+<div style="max-width:700px; margin:auto;">
+  <h3>Bloom Level Bilgilendirme Tablosu</h3>
+  <table border="1" cellpadding="6" cellspacing="0" style="width:100%; border-collapse:collapse; text-align:center;">
+    <tr style="background:#f5f5f5; font-weight:bold;">
+      <th>BL</th>
+      <th>Bloom Level</th>
+      <th>Cognitive Action Verbs</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Remember</td>
+      <td>Define, list, name, identify, recall</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Understand</td>
+      <td>Explain, describe, summarize, classify, interpret</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Apply</td>
+      <td>Use, calculate, demonstrate, solve, implement</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Analyze/Evaluate/Create</td>
+      <td>Analyze, compare, justify, critique, design, develop, construct</td>
+    </tr>
+  </table>
+</div>
 </body>
 </html>
