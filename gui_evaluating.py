@@ -425,6 +425,82 @@ def download_clo_csv():
 
     return response
 
+@app.route("/download_clo_analysis_csv")
+def download_clo_analysis_csv():
+    clo_results = session.get('clo_results', [])
+    
+    if not clo_results:
+        return "CLO Analysis verisi bulunamadı.", 404
+    
+    # CLO Analysis Results tablosu için veri hazırla
+    analysis_data = []
+    for clo_idx in range(len(clo_results)):
+        normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results[clo_idx]['max_clo_score'] > 0 else 0
+        # Average Bloom Level-CLO hesaplaması düzeltildi
+        avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results[clo_idx]['average_bloom_score'] > 0 else 0
+        
+        # Performance ve recommendation belirleme
+        if normalized_clo >= 85 and avg_bloom_level > 3.0:
+            performance_text = "Excellent mastery with deep, higher-order thinking"
+            recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice"
+        elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
+            performance_text = "Excellent mastery, but mostly mid-level cognitive tasks"
+            recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach"
+        elif normalized_clo >= 85 and avg_bloom_level < 2:
+            performance_text = "Superficial mastery — strong scores from low-level tasks"
+            recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking"
+        elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0:
+            performance_text = "Strong achievement with rich cognitive engagement"
+            recommendation_text = "Maintain rigor; consider refining support strategies for students"
+        elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
+            performance_text = "Strong results with balanced cognitive challenge"
+            recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills"
+        elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2:
+            performance_text = "Strong scores with limited depth — risk of over-simplification"
+            recommendation_text = "Shift from recall-based to application/analysis-type questions"
+        elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0:
+            performance_text = "Moderate learning with challenging conditions"
+            recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed"
+        elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
+            performance_text = "Moderate achievement with routine or procedural learning"
+            recommendation_text = "Revise both instruction and question difficulty for alignment"
+        elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2:
+            performance_text = "Basic understanding with very limited thinking depth"
+            recommendation_text = "Redesign instruction and assessments to encourage deep learning"
+        elif normalized_clo < 50 and avg_bloom_level > 3.0:
+            performance_text = "Poor achievement on cognitively rich tasks"
+            recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding"
+        elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
+            performance_text = "Low achievement with moderate-level assessment"
+            recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities"
+        elif normalized_clo < 50 and avg_bloom_level < 2:
+            performance_text = "Critical learning failure — performance and rigor are both weak"
+            recommendation_text = "Full instructional and assessment redesign needed — priority for improvement"
+        else:
+            performance_text = "No data available for assessment"
+            recommendation_text = "Please ensure all data is properly entered"
+        
+        analysis_data.append({
+            'CLO': f'CLO{clo_idx + 1}',
+            'Normalized CLO %': f"{normalized_clo:.2f}%",
+            'Average Bloom Level-CLO': f"{avg_bloom_level:.2f}",
+            'Student Performance Assessment': performance_text,
+            'Recommended Instructor Action': recommendation_text
+        })
+    
+    df = pd.DataFrame(analysis_data)
+
+    output = io.StringIO()
+    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
+
+    response = make_response(csv_output)
+    response.headers["Content-Disposition"] = "attachment; filename=clo_analysis_results.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+
+    return response
+
 # CALCULATION FUNCTIONS
 def max_possible_clo_score(qct_list, w_list):
     return sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
@@ -441,10 +517,12 @@ def weighted_bloom_score(qct_list, w_list, bl_list):
     return sum((qct / 100) * w * bl for qct, w, bl in zip(qct_list, w_list, bl_list))
 
 def average_bloom_score(qct_list, w_list, bl_list):
-    # MW-BL'nin, Max CLO Score ile aynı formülle hesaplanması isteniyorsa,
-    # bl listesini dikkate almayıp bu formülü kullanın.
-    return sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+    # Weighted BL Sum ÷ MW-BL hesaplaması
+    weighted_bloom_sum = sum((qct / 100) * w * bl for qct, w, bl in zip(qct_list, w_list, bl_list))
+    mw_bl = sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+    return weighted_bloom_sum / mw_bl if mw_bl > 0 else 0
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True)
+    
     

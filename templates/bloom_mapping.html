@@ -375,8 +375,8 @@
             </table>
         
             <div class="btn-group">
-            <button type="submit" class="submit-btn">Calculate Values & Save</button>
-            <a href="/download_clo_csv" class="submit-btn" style="background-color: #28a745;">Download Report</a>
+                <button type="submit" class="submit-btn">Calculate Values & Save</button>
+                <a href="/download_clo_csv" class="submit-btn" style="background-color: #28a745;">Download Report</a>
             </div>
         </form>
  
@@ -397,7 +397,7 @@
         <tbody>
             {% for clo_idx in range(10) %}
                 {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
-                {% set avg_bloom_level = (clo_results[clo_idx]['weighted_bloom_score'] / clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
+                {% set avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
                 
                 {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
                 {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
@@ -473,6 +473,11 @@
         </tbody>
     </table>
 </div>
+
+    <!-- Download Analysis Results Button -->
+    <div class="btn-group" style="margin-top: 20px; text-align: center;">
+        <a href="/download_clo_analysis_csv" class="submit-btn" style="background-color: #17a2b8;">Download Analysis Results</a>
+    </div>
 
     <!-- Information Tables Section -->
     <div class="info-section">
