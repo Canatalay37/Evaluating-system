@@ -81,6 +81,13 @@
             box-shadow: 0 0 3px rgba(52, 152, 219, 0.3);
         }
         
+        /* Veri olan input'ları vurgulamak için */
+        .input-cell input:not([value=""]) {
+            background-color: #fff3cd;
+            font-weight: bold;
+            color: #856404;
+        }
+        
         /* Calculated Value Cells */
         .calc-cell {
             background: #d5f4e6;
@@ -247,7 +254,7 @@
                 <!-- CLO Data Rows -->
                 {% for clo_idx, clo in enumerate(clos) %}
                 <tr>
-                    <td class="clo-cell">{{ clo.name }}</td>
+                    <td class="clo-cell">CLO {{ clo }}</td>
                     {% for exam_idx, exam in enumerate(exams) %}
                         {% for q in range(exam.question_count) %}
                             {% set global_q_idx = all_questions_flat_map[exam_idx][q] %}
@@ -259,7 +266,7 @@
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" max="100" 
                                        name="qct_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{{ clo_q_data[clo_idx][global_q_idx]['qct'] if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] else '' }}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['qct'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['qct'] }}{% endif %}">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -269,7 +276,7 @@
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" 
                                        name="w_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{{ clo_q_data[clo_idx][global_q_idx]['w'] if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] else '' }}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['w'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['w'] }}{% endif %}">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -279,7 +286,7 @@
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" 
                                        name="spm_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{{ clo_q_data[clo_idx][global_q_idx]['spm'] if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] else '' }}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['spm'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['spm'] }}{% endif %}">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -289,7 +296,7 @@
                                 {% endif %}">
                                 <input type="number" step="0.1" min="1" max="6" 
                                        name="bl_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{{ clo_q_data[clo_idx][global_q_idx]['bl'] if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] else '' }}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['bl'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['bl'] }}{% endif %}">
                             </td>
                         {% endfor %}
                     {% endfor %}
@@ -318,37 +325,68 @@
             <a href="/download_clo_csv" class="submit-btn" style="background-color: #28a745;">Download Report</a>
             </div>
         </form>
+ 
+        <!-- CLO Analysis Results Table -->
 
-        <!-- Formula Explanations -->
-        <div class="formula-section">
-            <div class="formula-title">📊 Calculation Formulas</div>
-            <div class="formula-grid">
-                <div class="formula-item">
-                    <div class="formula-name">Max Possible CLO Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ)</div>
-                </div>
-                <div class="formula-item">
-                    <div class="formula-name">Max Possible Bloom Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ)</div>
-                </div>
-                <div class="formula-item">
-                    <div class="formula-name">Weighted CLO Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ × SPMᵢ)</div>
-                </div>
-                <div class="formula-item">
-                    <div class="formula-name">Weighted Bloom Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ × BLᵢ)</div>
-                </div>
-                <div class="formula-item">
-                    <div class="formula-name">Normalized CLO Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ × SPMᵢ) / ∑(QCTᵢ/100 × Wᵢ)</div>
-                </div>
-                <div class="formula-item">
-                    <div class="formula-name">Average Bloom Score</div>
-                    <div class="formula-equation">∑(QCTᵢ/100 × Wᵢ × BLᵢ) / ∑(QCTᵢ/100 × Wᵢ)</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="formula-section">
+    <div class="formula-title">📊 CLO Analysis Results</div>
+    <table style="width: 100%; margin-top: 15px;">
+        <thead>
+            <tr>
+                <th style="background: linear-gradient(135deg, #6f42c1, #5a2d91); color: white; padding: 10px;">CLO</th>
+                <th style="background: linear-gradient(135deg, #ffc107, #e0a800); color: black; padding: 10px;">Normalized CLO %</th>
+                <th style="background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; padding: 10px;">Average Bloom Level-CLO</th>
+                <th style="background: linear-gradient(135deg, #20c997, #17a2b8); color: white; padding: 10px;">Student Performance Assessment</th>
+                <th style="background: linear-gradient(135deg, #dc3545, #bd2130); color: white; padding: 10px;">Recommended Instructor Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for clo_idx in range(10) %}
+                {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
+                {% set avg_bloom_level = (clo_results[clo_idx]['weighted_bloom_score'] / clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
+                
+                {% if normalized_clo >= 70 %}
+                    {% set performance_color = "#28a745" %}
+                    {% set performance_text = "Excellent achievement with advanced learning" %}
+                    {% set recommendation_text = "Maintain current teaching approach" %}
+                {% elif normalized_clo >= 60 %}
+                    {% set performance_color = "#ffc107" %}
+                    {% set performance_text = "Good achievement with solid learning" %}
+                    {% set recommendation_text = "Minor adjustments may be beneficial" %}
+                {% elif normalized_clo >= 50 %}
+                    {% set performance_color = "#fd7e14" %}
+                    {% set performance_text = "Moderate achievement with routine or procedural learning" %}
+                    {% set recommendation_text = "Revise teaching and assessment alignment" %}
+                {% elif normalized_clo >= 30 %}
+                    {% set performance_color = "#dc3545" %}
+                    {% set performance_text = "Critical learning failure — performance and rigor are both weak" %}
+                    {% set recommendation_text = "Full redesign of course delivery and assessments needed" %}
+                {% else %}
+                    {% set performance_color = "#6f42c1" %}
+                    {% set performance_text = "Moderate learning under challenging conditions" %}
+                    {% set recommendation_text = "Improve scaffolding and concept clarity" %}
+                {% endif %}
+                
+                <tr style="{% if loop.index0 % 2 == 0 %}background-color: #f8f9fa;{% endif %}">
+                    <td style="font-weight: bold; color: #6f42c1; padding: 8px;">CLO{{ clo_idx + 1 }}</td>
+                    <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107', '#fd7e14'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
+                        {{ "%.2f"|format(normalized_clo) }}%
+                    </td>
+                    <td style="background-color: #fd7e14; color: white; font-weight: bold; padding: 8px;">
+                        {{ "%.2f"|format(avg_bloom_level) }}
+                    </td>
+                    <td style="color: {{ performance_color }}; font-weight: bold; padding: 8px;">
+                        {{ performance_text }}
+                    </td>
+                    <td style="padding: 8px;">
+                        {{ recommendation_text }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
 </body>
 </html>
+        
