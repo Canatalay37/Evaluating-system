@@ -124,7 +124,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 {% for exam_total in student.exam_totals %}
                     <td>{{ exam_total }}</td>
                 {% endfor %}
-                <td class="overall-col">{{ student.overall_total }}</td>
+                <td class="overall-col">{{ "%.2f"|format(student.overall_total) }}</td>
             </tr>
         {% endfor %}
     </tbody>
