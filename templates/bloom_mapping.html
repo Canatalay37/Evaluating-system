@@ -178,12 +178,66 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
+
+        /* Information Tables Styles */
+        .info-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .info-table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #6c5ce7;
+        }
+        .info-table-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .info-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 11px;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .info-table th {
+            background: linear-gradient(135deg, #6c5ce7, #5a4fcf);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .info-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .info-table tr:hover {
+            background-color: #e9ecef;
+        }
+        .bl-level {
+            font-weight: bold;
+            color: #6c5ce7;
+            text-align: center;
+        }
         
         /* Responsive adjustments */
         @media (max-width: 1200px) {
             body { font-size: 10px; }
             th, td { padding: 2px 1px; font-size: 9px; }
             .input-cell input { width: 30px; height: 18px; }
+            .info-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
         }
     </style>
 </head>
@@ -345,26 +399,59 @@
                 {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
                 {% set avg_bloom_level = (clo_results[clo_idx]['weighted_bloom_score'] / clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
                 
-                {% if normalized_clo >= 70 %}
+                {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
+                {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
                     {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Excellent achievement with advanced learning" %}
-                    {% set recommendation_text = "Maintain current teaching approach" %}
-                {% elif normalized_clo >= 60 %}
+                    {% set performance_text = "Excellent mastery with deep, higher-order thinking" %}
+                    {% set recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice" %}
+                {% elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                    {% set performance_color = "#28a745" %}
+                    {% set performance_text = "Excellent mastery, but mostly mid-level cognitive tasks" %}
+                    {% set recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach" %}
+                {% elif normalized_clo >= 85 and avg_bloom_level < 2 %}
                     {% set performance_color = "#ffc107" %}
-                    {% set performance_text = "Good achievement with solid learning" %}
-                    {% set recommendation_text = "Minor adjustments may be beneficial" %}
-                {% elif normalized_clo >= 50 %}
+                    {% set performance_text = "Superficial mastery — strong scores from low-level tasks" %}
+                    {% set recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking" %}
+                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0 %}
+                    {% set performance_color = "#28a745" %}
+                    {% set performance_text = "Strong achievement with rich cognitive engagement" %}
+                    {% set recommendation_text = "Maintain rigor; consider refining support strategies for students" %}
+                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                    {% set performance_color = "#28a745" %}
+                    {% set performance_text = "Strong results with balanced cognitive challenge" %}
+                    {% set recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills" %}
+                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2 %}
+                    {% set performance_color = "#ffc107" %}
+                    {% set performance_text = "Strong scores with limited depth — risk of over-simplification" %}
+                    {% set recommendation_text = "Shift from recall-based to application/analysis-type questions" %}
+                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0 %}
                     {% set performance_color = "#fd7e14" %}
+                    {% set performance_text = "Moderate learning with challenging conditions" %}
+                    {% set recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed" %}
+                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                    {% set performance_color = "#28a745" %}
                     {% set performance_text = "Moderate achievement with routine or procedural learning" %}
-                    {% set recommendation_text = "Revise teaching and assessment alignment" %}
-                {% elif normalized_clo >= 30 %}
+                    {% set recommendation_text = "Revise both instruction and question difficulty for alignment" %}
+                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2 %}
+                    {% set performance_color = "#ffc107" %}
+                    {% set performance_text = "Basic understanding with very limited thinking depth" %}
+                    {% set recommendation_text = "Redesign instruction and assessments to encourage deep learning" %}
+                {% elif normalized_clo < 50 and avg_bloom_level > 3.0 %}
+                    {% set performance_color = "#6f42c1" %}
+                    {% set performance_text = "Poor achievement on cognitively rich tasks" %}
+                    {% set recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding" %}
+                {% elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                    {% set performance_color = "#28a745" %}
+                    {% set performance_text = "Low achievement with moderate-level assessment" %}
+                    {% set recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities" %}
+                {% elif normalized_clo < 50 and avg_bloom_level < 2 %}
                     {% set performance_color = "#dc3545" %}
                     {% set performance_text = "Critical learning failure — performance and rigor are both weak" %}
-                    {% set recommendation_text = "Full redesign of course delivery and assessments needed" %}
+                    {% set recommendation_text = "Full instructional and assessment redesign needed — priority for improvement" %}
                 {% else %}
-                    {% set performance_color = "#6f42c1" %}
-                    {% set performance_text = "Moderate learning under challenging conditions" %}
-                    {% set recommendation_text = "Improve scaffolding and concept clarity" %}
+                    {% set performance_color = "#6c757d" %}
+                    {% set performance_text = "No data available for assessment" %}
+                    {% set recommendation_text = "Please ensure all data is properly entered" %}
                 {% endif %}
                 
                 <tr style="{% if loop.index0 % 2 == 0 %}background-color: #f8f9fa;{% endif %}">
@@ -386,7 +473,8 @@
         </tbody>
     </table>
 </div>
- <!-- Information Tables Section -->
+
+    <!-- Information Tables Section -->
     <div class="info-section">
         <!-- Student Performance Interpretation Table -->
         <div class="info-table-container">
@@ -544,4 +632,3 @@
 </div>
 </body>
 </html>
-        
