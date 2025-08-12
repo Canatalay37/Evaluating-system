@@ -4,23 +4,84 @@
 <title>Exam Details</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; }
-form { background: #f5f5f5; padding: 20px; border-radius: 8px; max-width: 600px; }
+form { background: #f5f5f5; padding: 20px; border-radius: 8px; max-width: 800px; }
 input[type="text"], input[type="number"] { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
 input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
 .exam-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
+.clo-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
+.clo-names-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+.clo-name-input { display: flex; flex-direction: column; }
+.clo-name-input label { font-weight: bold; margin-bottom: 5px; }
+.clo-name-input input { width: 100%; }
 </style>
+<script>
+function updateCloNames() {
+    const cloCount = parseInt(document.getElementById('clo_count').value);
+    const container = document.getElementById('clo_names_container');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < cloCount; i++) {
+        const div = document.createElement('div');
+        div.className = 'clo-name-input';
+        div.innerHTML = `
+            <label>CLO ${i + 1} Name:</label>
+            <input type="text" name="clo_name_${i}" placeholder="Enter CLO ${i + 1} name" required>
+        `;
+        container.appendChild(div);
+    }
+}
+
+// Initialize on page load
+window.onload = function() {
+    updateCloNames();
+};
+</script>
 </head>
 <body>
-<h2>Exam Details</h2>
+<h2>Exam Details & CLO Configuration</h2>
 <form method="post">
-  {% for i in range(exam_count) %}
-    <div class="exam-section">
-      <h3>Exam {{ i+1 }}</h3>
-      <label>Exam Name: <input type="text" name="exam_name_{{i}}" placeholder="E.g: Midterm Exam" required></label><br>
-      <label>Question Count: <input type="number" name="question_count_{{i}}" min="1" max="50" required></label><br>
-      <label>Exam Weight (%): <input type="number" name="weight_{{i}}" min="1" max="100" required></label><br>
+  <!-- CLO Configuration Section -->
+  <div class="clo-section">
+    <h3>📚 Course Learning Outcomes (CLO) Configuration</h3>
+    <label>Number of CLOs: 
+      <select id="clo_count" name="clo_count" onchange="updateCloNames()" required>
+        <option value="">Select number of CLOs</option>
+        <option value="1">1 CLO</option>
+        <option value="2">2 CLOs</option>
+        <option value="3">3 CLOs</option>
+        <option value="4">4 CLOs</option>
+        <option value="5">5 CLOs</option>
+        <option value="6">6 CLOs</option>
+        <option value="7">7 CLOs</option>
+        <option value="8">8 CLOs</option>
+        <option value="9">9 CLOs</option>
+        <option value="10">10 CLOs</option>
+      </select>
+    </label>
+    <div id="clo_names_container" class="clo-names-container">
+      <!-- CLO name inputs will be dynamically generated here -->
+      {% for i in range(clo_count) %}
+        <div class="clo-name-input">
+          <label>CLO {{ i + 1 }} Name:</label>
+          <input type="text" name="clo_name_{{ i }}" placeholder="Enter CLO {{ i + 1 }} name" value="{{ clo_names[i] if clo_names and i < clo_names|length else '' }}" required>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
+  </div>
+
+  <!-- Exam Details Section -->
+  <div class="exam-section">
+    <h3>📝 Exam Details</h3>
+    {% for i in range(exam_count) %}
+      <div class="exam-section">
+        <h4>Exam {{ i+1 }}</h4>
+        <label>Exam Name: <input type="text" name="exam_name_{{i}}" placeholder="E.g: Midterm Exam" required></label><br>
+        <label>Question Count: <input type="number" name="question_count_{{i}}" min="1" max="50" required></label><br>
+        <label>Exam Weight (%): <input type="number" name="weight_{{i}}" min="1" max="100" required></label><br>
+      </div>
+    {% endfor %}
+  </div>
+  
   <input type="submit" value="Save and Continue">
 </form>
 </body>

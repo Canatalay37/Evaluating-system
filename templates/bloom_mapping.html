@@ -308,7 +308,7 @@
                 <!-- CLO Data Rows -->
                 {% for clo_idx, clo in enumerate(clos) %}
                 <tr>
-                    <td class="clo-cell">CLO {{ clo }}</td>
+                    <td class="clo-cell">{{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' + clo|string }}</td>
                     {% for exam_idx, exam in enumerate(exams) %}
                         {% for q in range(exam.question_count) %}
                             {% set global_q_idx = all_questions_flat_map[exam_idx][q] %}
@@ -377,6 +377,7 @@
             <div class="btn-group">
                 <button type="submit" class="submit-btn">Calculate Values & Save</button>
                 <a href="/download_clo_csv" class="submit-btn" style="background-color: #28a745;">Download Report</a>
+                <a href="/summary" class="submit-btn" style="background-color: #6c757d;">← Back to Summary</a>
             </div>
         </form>
  
@@ -395,7 +396,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for clo_idx in range(10) %}
+            {% for clo_idx in range(clos|length) %}
                 {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
                 {% set avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
                 
@@ -455,7 +456,7 @@
                 {% endif %}
                 
                 <tr style="{% if loop.index0 % 2 == 0 %}background-color: #f8f9fa;{% endif %}">
-                    <td style="font-weight: bold; color: #6f42c1; padding: 8px;">CLO{{ clo_idx + 1 }}</td>
+                    <td style="font-weight: bold; color: #6f42c1; padding: 8px;">{{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' + (clo_idx + 1)|string }}</td>
                     <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107', '#fd7e14'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
                         {{ "%.2f"|format(normalized_clo) }}%
                     </td>

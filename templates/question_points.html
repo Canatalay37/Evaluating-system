@@ -14,14 +14,6 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 <body>
 <h2>Question Points</h2>
 <form method="post">
-  <div class="exam-section">
-    <h3>CLO İsimleri:</h3>
-    <div style="margin-bottom: 16px;">
-      {% for i in range(10) %} {# Maksimum 10 CLO #}
-        <input type="text" name="clo_name_{{i}}" placeholder="CLO {{i+1}} Adı" style="margin-right:8px; margin-bottom:4px; width:140px;">
-      {% endfor %}
-    </div>
-  </div>
   {% for exam_idx, exam in enumerate(exams) %}
     <div class="exam-section">
       <h3>{{ exam['name'] }}</h3>
@@ -32,7 +24,7 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
               <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
             </label><br>
             <label>CLO:
-              {% for clo_idx in range(1, 11) %}
+              {% for clo_idx in range(1, clo_count + 1) %}
                 <label style="display:inline-block; margin-right:8px;">
                   <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ clo_idx }}"> {{ clo_idx }}
                 </label>
