@@ -13,6 +13,15 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
 </head>
 <body>
 <h2>Question Points</h2>
+{% if students_per_exam %}
+  <div style="margin-bottom:10px;color:#555;">
+    {% for exam_idx, exam in enumerate(exams) %}
+      <div>
+        <strong>{{ exam['name'] }}</strong>: Students = {{ students_per_exam[exam_idx] if exam_idx < students_per_exam|length else 'N/A' }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 <form method="post">
   {% for exam_idx, exam in enumerate(exams) %}
     <div class="exam-section">
