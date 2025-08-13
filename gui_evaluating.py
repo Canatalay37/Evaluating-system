@@ -303,6 +303,38 @@ def bloom_level_mapping():
             clo_table_data.append(row)
         session['clo_table'] = clo_table_data
         
+        # SPM değerlerini otomatik olarak güncelle
+        if 'students' in session and session['students']:
+            students = session['students']
+            question_performance_medians = []
+            global_q_idx_counter = 0
+            
+            for exam_idx, exam in enumerate(exams):
+                for q_idx_in_exam in range(int(exam['question_count'])):
+                    grades_for_question = []
+                    for student in students:
+                        if (global_q_idx_counter < len(student['grades']) and 
+                            student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
+                            grades_for_question.append(student['grades'][global_q_idx_counter])
+                    
+                    spm_val = 0.0
+                    if grades_for_question:
+                        # Max points'i bul
+                        max_points = 0
+                        for q_rec in question_points_nested[exam_idx]:
+                            if q_rec.get('question_idx') == q_idx_in_exam:
+                                max_points = q_rec.get('points', 0)
+                                break
+                        
+                        if max_points > 0:
+                            median_val = np.median(grades_for_question)
+                            spm_val = round((median_val / max_points) * 100, 2)
+                    
+                    question_performance_medians.append(spm_val)
+                    global_q_idx_counter += 1
+            
+            session["question_performance_medians"] = question_performance_medians
+        
         # POST/Redirect/GET pattern - form gönderildikten sonra GET ile yönlendir
         return redirect(url_for("bloom_level_mapping"))
     
@@ -334,11 +366,28 @@ def bloom_level_mapping():
                     ]
                     if q_clo_records:
                         rec = q_clo_records[0]
-                        spm_val = (
-                            question_performance_medians[global_q_idx_counter]
-                            if global_q_idx_counter < len(question_performance_medians)
-                            else 0.0
-                        )
+                        # SPM değerini otomatik hesapla
+                        spm_val = 0.0
+                        if 'students' in session and session['students']:
+                            students = session['students']
+                            grades_for_question = []
+                            for student in students:
+                                if (global_q_idx_counter < len(student['grades']) and 
+                                    student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
+                                    grades_for_question.append(student['grades'][global_q_idx_counter])
+                            
+                            if grades_for_question:
+                                # Max points'i bul
+                                max_points = 0
+                                for q_rec in question_points_nested[exam_idx]:
+                                    if q_rec.get('question_idx') == q_idx_in_exam:
+                                        max_points = q_rec.get('points', 0)
+                                        break
+                                
+                                if max_points > 0:
+                                    median_val = np.median(grades_for_question)
+                                    spm_val = round((median_val / max_points) * 100, 2)
+                        
                         clo_row[global_q_idx_counter] = {
                             'qct': rec.get('qct', 0.0),
                             'w': rec.get('w', 0.0),
@@ -692,6 +741,7 @@ def average_bloom_score(qct_list, w_list, bl_list):
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True)
+    
     
     
     
