@@ -66,6 +66,8 @@ input[readonly] {
   border-radius: 4px; 
   cursor: pointer; 
   margin-top: 20px; 
+  text-decoration: none; 
+  display: inline-block;
 }
 .id-col { width: 30px; }
 .student-info-col { width: 120px; }
@@ -93,8 +95,6 @@ input[readonly] {
 </head>
 <body>
 <h2>Student Information and Grade Entry</h2>
-
-<a href="{{ url_for('bloom_level_mapping') }}" class="top-right-button">Bloom Level System</a>
 
 <form id="gradesForm" method="post">
   <div class="tabs">
@@ -125,7 +125,8 @@ input[readonly] {
           </tr>
         </thead>
         <tbody>
-          {% for student_idx in range(student_count) %}
+          {% set current_exam_student_count = students_per_exam[exam_idx] if students_per_exam and exam_idx < students_per_exam|length else student_count %}
+          {% for student_idx in range(current_exam_student_count) %}
             <tr class="student-row">
               <td>{{ student_idx + 1 }}</td>
               <td><input type="text" name="student_number_{{ student_idx }}" placeholder="Std. No" style="width:95%;" value="{{ students_data[student_idx].number if students_data[student_idx] else '' }}"></td>
@@ -133,6 +134,11 @@ input[readonly] {
               {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %} 
                 <td>
+                  {% set existing_val = '' %}
+                  {% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx %}
+                    {% set _g = students_data[student_idx].grades[q_flat.global_question_idx] %}
+                    {% if _g not in [0, 0.0, '0', '0.0'] %}{% set existing_val = _g %}{% endif %}
+                  {% endif %}
                   <input type="number" 
                          class="grade-input" 
                          name="grade_{{ student_idx }}_{{ q_flat.global_question_idx }}" 
@@ -141,8 +147,9 @@ input[readonly] {
                          step="0.5"
                          data-student="{{ student_idx }}" 
                          data-question="{{ q_flat.global_question_idx }}"
-                         value="{% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx %}{{ students_data[student_idx].grades[q_flat.global_question_idx] }}{% endif %}"
-                         style="width:40px;">
+                         value="{{ existing_val }}"
+                         placeholder="0 - {{ q_flat.max_points }}"
+                         style="width:60px;">
                 </td>
                 {% endif %}
               {% endfor %}
@@ -225,6 +232,7 @@ input[readonly] {
   <br>
 <button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
 <button type="button" id="downloadCsvButton" class="submit-btn" style="background-color: #28a745;">Download CSV</button>
+<a href="{{ url_for('bloom_level_mapping') }}" class="submit-btn" style="background-color:#6f42c1;">Bloom Level System</a>
 </form>
 
 <script>

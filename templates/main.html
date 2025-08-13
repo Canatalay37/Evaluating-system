@@ -1,57 +1,459 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<title>Start</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: #fafafa; }
-.card { background: #ffffff; padding: 24px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 420px; }
-form { display: flex; flex-direction: column; gap: 12px; }
-label { font-weight: 600; color: #333; }
-input[type="number"] { padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 6px; }
-input[type="submit"] { background: #007bff; color: white; padding: 12px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; }
-input[type="submit"]:hover { background: #0056b3; }
-.grid { display: grid; grid-template-columns: 1fr 120px; gap: 8px 12px; align-items: center; }
-.muted { color: #666; font-size: 12px; margin-top: -6px; }
-.divider { height: 1px; background: #eee; margin: 8px 0; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Evaluation System - Faculty of Civil and Environmental Engineering</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+            border-bottom: 3px solid #764ba2;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 80px;
+            width: auto;
+            border-radius: 0;
+            box-shadow: none;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        label {
+            font-weight: 600;
+            color: #34495e;
+            font-size: 0.95rem;
+        }
+
+        input[type="number"] {
+            padding: 12px 16px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .helper-text {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: -10px;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e0e6ed, transparent);
+            margin: 10px 0;
+        }
+
+        #students_per_exam_container {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 15px 15px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .header-title {
+                font-size: 1.5rem;
+            }
+
+            .header-subtitle {
+                font-size: 1rem;
+            }
+
+            .card {
+                padding: 2rem;
+                margin: 1rem;
+            }
+
+            .input-grid, #students_per_exam_container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Animation for form elements */
+        .input-group {
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .input-group:nth-child(1) { animation-delay: 0.1s; }
+        .input-group:nth-child(2) { animation-delay: 0.2s; }
+        .input-group:nth-child(3) { animation-delay: 0.3s; }
+        .input-group:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading state for dynamic content */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-<div class="card">
-  <h2 style="margin:0 0 12px 0;">Exam Evaluation System</h2>
-  <form method="post" id="startForm">
-    <div class="grid">
-      <label for="exam_count">How many exams are there?</label>
-      <input type="number" id="exam_count" name="exam_count" min="1" max="10" value="1" required>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            <div class="header-text">
+                <h1 class="header-title">Exam Evaluation System</h1>
+                <p class="header-subtitle">Faculty of Civil and Environmental Engineering</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Setup</h2>
+                <p class="card-subtitle">Start your exam evaluation workflow</p>
+            </div>
+            
+            <form method="post" id="startForm" class="form-container">
+                <div class="input-group">
+                    <div class="input-grid">
+                        <label for="exam_count">How many exams are there?</label>
+                        <input type="number" id="exam_count" name="exam_count" min="1" max="10" value="1" required>
+                    </div>
+                </div>
+                
+                <div class="helper-text">
+                    You can set how many students took each exam (they may differ per exam).
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="input-group">
+                    <div id="students_per_exam_container"></div>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    Continue
+                    <span style="margin-left: 10px;">→</span>
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="muted">Set how many students took each exam (they may differ per exam).</div>
-    <div class="divider"></div>
-    <div id="students_per_exam_container" class="grid"></div>
-    <input type="submit" value="Continue">
-  </form>
-</div>
-<script>
-function renderStudentInputs() {
-  const count = parseInt(document.getElementById('exam_count').value || '1');
-  const container = document.getElementById('students_per_exam_container');
-  container.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const label = document.createElement('label');
-    label.htmlFor = `students_per_exam_${i}`;
-    label.textContent = `Students in Exam ${i + 1}`;
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.min = '0';
-    input.max = '1000';
-    input.name = `students_per_exam_${i}`;
-    input.id = `students_per_exam_${i}`;
-    input.required = true;
-    input.value = '0';
-    container.appendChild(label);
-    container.appendChild(input);
-  }
-}
-document.getElementById('exam_count').addEventListener('input', renderStudentInputs);
-window.addEventListener('DOMContentLoaded', renderStudentInputs);
-</script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
+    </footer>
+
+    <script>
+        function renderStudentInputs() {
+            const count = parseInt(document.getElementById('exam_count').value || '1');
+            const container = document.getElementById('students_per_exam_container');
+            
+            // Add loading state
+            container.classList.add('loading');
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+                
+                for (let i = 0; i < count; i++) {
+                    const label = document.createElement('label');
+                    label.htmlFor = `students_per_exam_${i}`;
+                    label.textContent = `Students in Exam ${i + 1}`;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '0';
+                    input.max = '1000';
+                    input.name = `students_per_exam_${i}`;
+                    input.id = `students_per_exam_${i}`;
+                    input.required = true;
+                    input.value = '0';
+                    input.placeholder = 'e.g., 25';
+                    
+                    container.appendChild(label);
+                    container.appendChild(input);
+                }
+                
+                // Remove loading state
+                container.classList.remove('loading');
+            }, 200);
+        }
+
+        // Event listeners
+        document.getElementById('exam_count').addEventListener('input', renderStudentInputs);
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStudentInputs();
+            
+            // Add smooth scroll behavior
+            document.documentElement.style.scrollBehavior = 'smooth';
+            
+            // Form validation enhancement
+            const form = document.getElementById('startForm');
+            form.addEventListener('submit', function(e) {
+                const examCount = parseInt(document.getElementById('exam_count').value);
+                let hasError = false;
+                
+                for (let i = 0; i < examCount; i++) {
+                    const studentInput = document.getElementById(`students_per_exam_${i}`);
+                    if (!studentInput.value || parseInt(studentInput.value) < 0) {
+                        hasError = true;
+                        studentInput.style.borderColor = '#e74c3c';
+                        break;
+                    } else {
+                        studentInput.style.borderColor = '#e0e6ed';
+                    }
+                }
+                
+                if (hasError) {
+                    e.preventDefault();
+                    alert('Please enter valid student counts for all exams.');
+                }
+            });
+        });
+
+        // Add some interactive effects
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>

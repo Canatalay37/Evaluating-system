@@ -80,15 +80,19 @@ def question_points():
     exams = session.get("exams")
     students_per_exam = session.get("students_per_exam", [])
     clo_count = session.get("clo_count", 10)
+    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
     if not exams:
         return redirect(url_for("exam_details"))
     
     if request.method == "POST":
+        # Sunucu tarafı doğrulama: her sınavın soru puanları toplamı 100 olmalı
         question_points_list = []
         for idx, exam in enumerate(exams):
+            running_sum = 0.0
             questions = []
             for q in range(int(exam["question_count"])):
                 points = float(request.form.get(f"points_{idx}_{q}", 0))
+                running_sum += points
                 clo_keys = request.form.getlist(f"clo_{idx}_{q}")
                 selected_clos = [int(c) for c in clo_keys]
                 qct = float(request.form.get(f"qct_{idx}_{q}", 0))
@@ -105,15 +109,26 @@ def question_points():
                         "question_idx": q
                     })
             question_points_list.append(questions)
+            # Toplamı kontrol et
+            if abs(running_sum - 100.0) > 1e-6:
+                return f"{exams[idx]['name']} için soru puanları toplamı {running_sum}. Toplam 100 olmalı.", 400
         session["question_points"] = question_points_list
         return redirect(url_for("student_grades"))
-    return render_template("question_points.html", exams=exams, clo_count=clo_count, students_per_exam=students_per_exam, enumerate=enumerate)
+    return render_template(
+        "question_points.html",
+        exams=exams,
+        clo_count=clo_count,
+        clo_names=clo_names,
+        students_per_exam=students_per_exam,
+        enumerate=enumerate,
+    )
 
 @app.route("/student_grades", methods=["GET", "POST"])
 def student_grades():
     exams = session.get("exams")
     student_count = session.get("student_count")
     question_points_nested = session.get("question_points")
+    students_per_exam = session.get("students_per_exam", [])
     
     if not exams or not student_count or not question_points_nested:
         return redirect(url_for("main"))
@@ -197,6 +212,7 @@ def student_grades():
                             question_points_nested=question_points_nested, 
                             students_data=students_data, 
                             all_questions_flat=all_questions_flat_for_jinja, 
+                            students_per_exam=students_per_exam,
                             enumerate=enumerate)
 
 @app.route("/bloom_level_mapping", methods=["GET", "POST"])

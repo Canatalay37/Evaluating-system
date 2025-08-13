@@ -22,7 +22,7 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
     {% endfor %}
   </div>
 {% endif %}
-<form method="post">
+<form method="post" id="qpForm">
   {% for exam_idx, exam in enumerate(exams) %}
     <div class="exam-section">
       <h3>{{ exam['name'] }}</h3>
@@ -32,13 +32,17 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
             <label>Soru {{ q+1 }} Puanı:
               <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
             </label><br>
-            <label>CLO:
-              {% for clo_idx in range(1, clo_count + 1) %}
-                <label style="display:inline-block; margin-right:8px;">
-                  <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ clo_idx }}"> {{ clo_idx }}
-                </label>
-              {% endfor %}
-            </label><br>
+            <div style="margin:6px 0;">
+              <div style="font-weight:600; margin-bottom:4px;">CLO Seçimi:</div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:6px; align-items:center;">
+                {% for idx in range(clo_count) %}
+                  <label style="display:flex; gap:8px; align-items:center; background:#fff; border:1px solid #eee; padding:4px 6px; border-radius:4px;">
+                    <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
+                    <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
             <label>QCT (%):
               <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required>
             </label><br>
@@ -50,8 +54,25 @@ input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; bo
       </div>
     </div>
   {% endfor %}
+  <div style="margin-top:8px;color:#666;">Her sınav içindeki soru puanlarının toplamı 100 olmalıdır.</div>
   <input type="submit" value="Kaydet ve Devam Et">
 </form>
+<script>
+// Her sınavın soru puanları toplamı 100 olmalı
+document.getElementById('qpForm').addEventListener('submit', function(e) {
+  const examSections = Array.from(document.querySelectorAll('.exam-section'));
+  for (let examIdx = 0; examIdx < examSections.length; examIdx++) {
+    const inputs = examSections[examIdx].querySelectorAll('input[name^="points_' + examIdx + '_"]');
+    let sum = 0;
+    inputs.forEach(inp => { const v = parseFloat(inp.value || '0'); if (!isNaN(v)) sum += v; });
+    if (sum !== 100) {
+      e.preventDefault();
+      alert(`"${document.querySelectorAll('.exam-section h3')[examIdx].textContent}" için soru puanları toplamı ${sum}. Toplam 100 olmalı.`);
+      return false;
+    }
+  }
+});
+</script>
 <hr style="margin-top:32px;">
 <div style="max-width:700px; margin:auto;">
   <h3>Bloom Level Bilgilendirme Tablosu</h3>
