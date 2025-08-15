@@ -107,7 +107,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             border: 1px solid rgba(255,255,255,0.2);
             position: relative;
             overflow: hidden;
@@ -159,13 +159,20 @@
             align-items: center;
         }
 
+        .input-grid-wide {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
         label {
             font-weight: 600;
             color: #34495e;
             font-size: 0.95rem;
         }
 
-        input[type="number"] {
+        input[type="text"], input[type="number"] {
             padding: 12px 16px;
             border: 2px solid #e0e6ed;
             border-radius: 10px;
@@ -174,7 +181,7 @@
             background: #f8f9fa;
         }
 
-        input[type="number"]:focus {
+        input[type="text"]:focus, input[type="number"]:focus {
             outline: none;
             border-color: #667eea;
             background: white;
@@ -305,6 +312,7 @@
         .input-group:nth-child(2) { animation-delay: 0.2s; }
         .input-group:nth-child(3) { animation-delay: 0.3s; }
         .input-group:nth-child(4) { animation-delay: 0.4s; }
+        .input-group:nth-child(5) { animation-delay: 0.5s; }
 
         @keyframes slideIn {
             from {
@@ -345,6 +353,30 @@
             </div>
             
             <form method="post" id="startForm" class="form-container">
+                <!-- Course Information Section -->
+                <div class="input-group">
+                    <div class="input-grid-wide">
+                        <label for="course_code">Course Code:</label>
+                        <input type="text" id="course_code" name="course_code" placeholder="e.g., CE101, MATH201" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-grid-wide">
+                        <label for="teacher_name">Teacher Name:</label>
+                        <input type="text" id="teacher_name" name="teacher_name" placeholder="e.g., Dr. John Smith" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-grid-wide">
+                        <label for="semester">Semester:</label>
+                        <input type="text" id="semester" name="semester" placeholder="e.g., Fall 2024, Spring 2025" required>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+                
                 <div class="input-group">
                     <div class="input-grid">
                         <label for="exam_count">How many exams are there?</label>
@@ -426,6 +458,17 @@
                 const examCount = parseInt(document.getElementById('exam_count').value);
                 let hasError = false;
                 
+                // Check course information
+                const courseCode = document.getElementById('course_code').value.trim();
+                const teacherName = document.getElementById('teacher_name').value.trim();
+                const semester = document.getElementById('semester').value.trim();
+                
+                if (!courseCode || !teacherName || !semester) {
+                    hasError = true;
+                    alert('Please fill in all course information fields (Course Code, Teacher Name, Semester).');
+                    return;
+                }
+                
                 for (let i = 0; i < examCount; i++) {
                     const studentInput = document.getElementById(`students_per_exam_${i}`);
                     if (!studentInput.value || parseInt(studentInput.value) < 0) {
@@ -445,7 +488,7 @@
         });
 
         // Add some interactive effects
-        document.querySelectorAll('input[type="number"]').forEach(input => {
+        document.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
             input.addEventListener('focus', function() {
                 this.parentElement.style.transform = 'scale(1.02)';
             });

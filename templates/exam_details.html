@@ -1,76 +1,484 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<title>Exam Details</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-form { background: #f5f5f5; padding: 20px; border-radius: 8px; max-width: 800px; }
-input[type="text"], input[type="number"] { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
-input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-.exam-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
-.clo-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
-.clo-names-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
-.clo-name-input { display: flex; flex-direction: column; }
-.clo-name-input label { font-weight: bold; margin-bottom: 5px; }
-.clo-name-input input { width: 100%; }
-</style>
-<script>
-window.initialCloNames = {{ clo_names|tojson }};
-function updateCloNames() {
-    const input = document.getElementById('clo_count');
-    const cloCount = parseInt(input.value || '0');
-    const container = document.getElementById('clo_names_container');
-    container.innerHTML = '';
-    for (let i = 0; i < cloCount; i++) {
-        const div = document.createElement('div');
-        div.className = 'clo-name-input';
-        const label = document.createElement('label');
-        label.textContent = `CLO ${i + 1} Name:`;
-        const txt = document.createElement('input');
-        txt.type = 'text';
-        txt.name = `clo_name_${i}`;
-        txt.placeholder = `Enter CLO ${i + 1} name`;
-        txt.required = true;
-        if (Array.isArray(window.initialCloNames) && i < window.initialCloNames.length) {
-            txt.value = window.initialCloNames[i] || '';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Details - Faculty of Civil and Environmental Engineering</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        div.appendChild(label);
-        div.appendChild(txt);
-        container.appendChild(div);
-    }
-}
 
-window.addEventListener('DOMContentLoaded', updateCloNames);
-</script>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+            border-bottom: 3px solid #764ba2;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 80px;
+            width: auto;
+            border-radius: 0;
+            box-shadow: none;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .course-info {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .course-info h3 {
+            color: #667eea;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .course-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .course-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .course-info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .course-info-value {
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .section {
+            background: rgba(248, 249, 250, 0.8);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            border: 1px solid rgba(223, 230, 237, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clo-names-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .clo-name-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .clo-name-input label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-size: 0.95rem;
+        }
+
+        .exam-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        .exam-section h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 12px 16px;
+            margin: 5px 0;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(248, 249, 250, 0.8);
+            width: 100%;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Form Layout */
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row label {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 0.95rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .header-title {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 2rem;
+                margin: 1rem;
+            }
+
+            .clo-names-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+        }
+
+        /* Animation for form elements */
+        .section {
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .section:nth-child(1) { animation-delay: 0.1s; }
+        .section:nth-child(2) { animation-delay: 0.2s; }
+        .section:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <script>
+        window.initialCloNames = {{ clo_names|tojson | safe }};
+        function updateCloNames() {
+            const input = document.getElementById('clo_count');
+            const cloCount = parseInt((input && input.value) ? input.value : '0', 10);
+            const container = document.getElementById('clo_names_container');
+            container.innerHTML = '';
+            for (let i = 0; i < cloCount; i++) {
+                const div = document.createElement('div');
+                div.className = 'clo-name-input';
+                const label = document.createElement('label');
+                label.textContent = `CLO ${i + 1} Name:`;
+                const txt = document.createElement('input');
+                txt.type = 'text';
+                txt.name = `clo_name_${i}`;
+                txt.placeholder = `Enter CLO ${i + 1} name`;
+                txt.required = true;
+                if (Array.isArray(window.initialCloNames) && i < window.initialCloNames.length) {
+                    txt.value = window.initialCloNames[i] || '';
+                }
+                div.appendChild(label);
+                div.appendChild(txt);
+                container.appendChild(div);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', updateCloNames);
+    </script>
 </head>
 <body>
-<h2>Exam Details & CLO Configuration</h2>
-<form method="post">
-  <!-- CLO Configuration Section -->
-  <div class="clo-section">
-    <h3>📚 Course Learning Outcomes (CLO) Configuration</h3>
-    <label>Number of CLOs:
-      <input id="clo_count" name="clo_count" type="number" min="1" step="1" value="{{ clo_count }}" oninput="updateCloNames()" required>
-    </label>
-    <div id="clo_names_container" class="clo-names-container">
-      <!-- CLO name inputs are generated by JS -->
-    </div>
-  </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            <div class="header-text">
+                <h1 class="header-title">Exam Evaluation System</h1>
+                <p class="header-subtitle">Faculty of Civil and Environmental Engineering</p>
+                
+                <!-- Course Information Display -->
+                <div class="course-info">
+                    <h3>📚 Course Information</h3>
+                    <div class="course-info-grid">
+                        <div class="course-info-item">
+                            <span class="course-info-label">Course Code:</span>
+                            <span class="course-info-value">{{ session.get('course_code', 'N/A') }}</span>
+                        </div>
+                        <div class="course-info-item">
+                            <span class="course-info-label">Teacher:</span>
+                            <span class="course-info-value">{{ session.get('teacher_name', 'N/A') }}</span>
+                        </div>
+                        <div class="course-info-item">
+                            <span class="course-info-label">Semester:</span>
+                            <span class="course-info-value">{{ session.get('semester', 'N/A') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <!-- Exam Details Section -->
-  <div class="exam-section">
-    <h3>📝 Exam Details</h3>
-    {% for i in range(exam_count) %}
-      <div class="exam-section">
-        <h4>Exam {{ i+1 }}</h4>
-        <label>Exam Name: <input type="text" name="exam_name_{{i}}" placeholder="E.g: Midterm Exam" required></label><br>
-        <label>Question Count: <input type="number" name="question_count_{{i}}" min="1" max="50" required></label><br>
-        <label>Exam Weight (%): <input type="number" name="weight_{{i}}" min="1" max="100" required></label><br>
-      </div>
-    {% endfor %}
-  </div>
-  
-  <input type="submit" value="Save and Continue">
-</form>
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Exam Details & CLO Configuration</h2>
+            </div>
+            
+            <form method="post">
+                <!-- CLO Configuration Section -->
+                <div class="section">
+                    <h3>📚 Course Learning Outcomes (CLO) Configuration</h3>
+                    <label>Number of CLOs:
+                        <input id="clo_count" name="clo_count" type="number" min="1" step="1" value="{{ clo_count }}" oninput="updateCloNames()" required>
+                    </label>
+                    <div id="clo_names_container" class="clo-names-container">
+                        <!-- CLO name inputs are generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Exam Details Section -->
+                <div class="section">
+                    <h3>📝 Exam Details</h3>
+                    {% for i in range(exam_count) %}
+                        <div class="exam-section">
+                            <h4>Exam {{ i+1 }}</h4>
+                            <div class="form-row">
+                                <label>Exam Name:
+                                    <input type="text" name="exam_name_{{i}}" placeholder="E.g: Midterm Exam" required>
+                                </label>
+                            </div>
+                            <div class="form-row">
+                                <label>Question Count:
+                                    <input type="number" name="question_count_{{i}}" min="1" max="50" required>
+                                </label>
+                                <label>Exam Weight (%):
+                                    <input type="number" name="weight_{{i}}" min="1" max="100" required>
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <button type="submit" class="submit-btn">Save and Continue →</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
+    </footer>
 </body>
 </html>

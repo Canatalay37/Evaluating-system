@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-    <title>Bloom Level & CLO Mapping</title>
+    <title>Bloom Level & CLO Analysis</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -15,98 +15,6 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        table { 
-            border-collapse: collapse; 
-            width: 100%; 
-            margin-bottom: 20px;
-            border: 2px solid #2c3e50;
-        }
-        th, td { 
-            border: 1px solid #34495e; 
-            padding: 4px 2px; 
-            text-align: center; 
-            vertical-align: middle;
-            font-size: 10px;
-        }
-        
-        /* Header Styles */
-        .main-header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .evaluation-header {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            font-weight: bold;
-        }
-        .question-header {
-            background: linear-gradient(135deg, #f39c12, #d68910);
-            color: white;
-            font-size: 9px;
-            font-weight: bold;
-        }
-        .performance-header {
-            background: linear-gradient(135deg, #27ae60, #229954);
-            color: white;
-            font-weight: bold;
-        }
-        
-        /* CLO Row Styles */
-        .clo-cell {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            color: white;
-            font-weight: bold;
-            min-width: 60px;
-        }
-        
-        /* Input Cells */
-        .input-cell {
-            background: #ecf0f1;
-            padding: 1px;
-        }
-        .input-cell input {
-            width: 35px;
-            height: 20px;
-            border: 1px solid #bdc3c7;
-            text-align: center;
-            font-size: 9px;
-            border-radius: 3px;
-            padding: 2px;
-        }
-        .input-cell input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 3px rgba(52, 152, 219, 0.3);
-        }
-        
-        /* Veri olan input'ları vurgulamak için */
-        .input-cell input:not([value=""]) {
-            background-color: #fff3cd;
-            font-weight: bold;
-            color: #856404;
-        }
-        
-        /* Calculated Value Cells */
-        .calc-cell {
-            background: #d5f4e6;
-            font-weight: bold;
-            color: #27ae60;
-        }
-        
-        /* Total Row */
-        .total-row {
-            background: linear-gradient(135deg, #34495e, #2c3e50);
-            color: white;
-            font-weight: bold;
-        }
-        
-        /* Colored columns for different evaluations */
-        .midterm-col { background-color: rgba(52, 152, 219, 0.1); }
-        .final-col { background-color: rgba(155, 89, 182, 0.1); }
-        .quiz-col { background-color: rgba(230, 126, 34, 0.1); }
-        .project-col { background-color: rgba(231, 76, 60, 0.1); }
         
         /* Formula Section */
         .formula-section {
@@ -122,33 +30,11 @@
             color: #2c3e50;
             margin-bottom: 15px;
         }
-        .formula-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .formula-item {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-        }
-        .formula-name {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-        .formula-equation {
-            font-family: 'Times New Roman', serif;
-            font-size: 13px;
-            color: #34495e;
-            font-style: italic;
-        }
         
         /* Button */
         .btn-group {
             display: flex;
-            gap: 10px; /* Butonlar arasına boşluk ekler */
+            gap: 10px;
             margin-top: 20px;
         }
         .submit-btn, .download-btn {
@@ -159,7 +45,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-decoration: none; /* Linkin altını çizgisini kaldırır */
+            text-decoration: none;
             color: white;
             display: inline-block;
         }
@@ -232,429 +118,302 @@
         /* Responsive adjustments */
         @media (max-width: 1200px) {
             body { font-size: 10px; }
-            th, td { padding: 2px 1px; font-size: 9px; }
-            .input-cell input { width: 30px; height: 18px; }
             .info-section {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
         }
+        
+        /* Jinja2 Template Styles - CSS Validator may show errors for these */
+        /* These are dynamic styles that use Jinja2 template variables */
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Bloom Level Mapping</h2>
+        <h2>Bloom Level & CLO Analysis</h2>
         
-        <!-- SPM Otomatik Hesaplama Bilgisi -->
-        <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
-            <strong>ℹ️ Bilgi:</strong> SPM (Student Performance Median) değerleri otomatik olarak hesaplanıp girilir. 
-            Öğrenci notları değiştiğinde bu değerler güncellenir.
-        </div>
-
-        <form method="post">
-            <table>
-                <!-- Main Headers -->
-                <tr>
-                    <th class="main-header" rowspan="3">CLO</th>
-                    {% for exam in exams %}
-                        <th class="evaluation-header" colspan="{{ exam.question_count * 4 }}">{{ exam.name }}</th>
-                    {% endfor %}
-                    <th class="performance-header" colspan="4">CLO Performance Values</th>
-                </tr>
-                
-                <!-- Question Numbers -->
-                <tr>
-                    {% for exam in exams %}
-                        {% for q in range(exam.question_count) %}
-                            <th class="question-header" colspan="4">Q{{ q+1 }}</th>
-                        {% endfor %}
-                    {% endfor %}
-                    <th class="performance-header">Max CLO Score</th>
-                    <th class="performance-header">CLO Score</th>
-                    <th class="performance-header">MW-BL</th>
-                    <th class="performance-header">Weighted BL Sum</th>
-                </tr>
-                
-                <!-- Column Headers -->
-                <tr>
-                    {% for exam_idx, exam in enumerate(exams) %}
-                        {% for q in range(exam.question_count) %}
-                            <th class="question-header 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">QCT<br>(%)</th>
-                            <th class="question-header 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">W</th>
-                            <th class="question-header 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">SPM</th>
-                            <th class="question-header 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">BL</th>
-                        {% endfor %}
-                    {% endfor %}
-                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ)" }}</th>
-                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × SPMᵢ)" }}</th>
-                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)/∑(QCTᵢ/100 × Wᵢ)" }}</th>
-                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)" }}</th>
-                </tr>
-
-                <!-- CLO Data Rows -->
-                {% for clo_idx, clo in enumerate(clos) %}
-                <tr>
-                    <td class="clo-cell">{{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' + clo|string }}</td>
-                    {% for exam_idx, exam in enumerate(exams) %}
-                        {% for q in range(exam.question_count) %}
-                            {% set global_q_idx = all_questions_flat_map[exam_idx][q] %}
-                            <td class="input-cell 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">
-                                <input type="number" step="0.01" min="0" max="100" 
-                                       name="qct_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['qct'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['qct'] }}{% endif %}">
-                            </td>
-                            <td class="input-cell 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">
-                                <input type="number" step="0.01" min="0" 
-                                       name="w_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['w'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['w'] }}{% endif %}">
-                            </td>
-                            <td class="input-cell 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">
-                                <input type="number" step="0.01" min="0" 
-                                       name="spm_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['spm'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['spm'] }}{% endif %}">
-                            </td>
-                            <td class="input-cell 
-                                {% if exam.name == 'Midterm' %}midterm-col
-                                {% elif exam.name == 'Final' %}final-col
-                                {% elif exam.name == 'Quiz' %}quiz-col
-                                {% elif exam.name == 'Project' %}project-col
-                                {% endif %}">
-                                <input type="number" step="0.1" min="1" max="6" 
-                                       name="bl_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['bl'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['bl'] }}{% endif %}">
-                            </td>
-                        {% endfor %}
-                    {% endfor %}
-                    
-                    <!-- Performance Values -->
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['max_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['weighted_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.2f"|format(clo_results[clo_idx]['weighted_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.00' }}</td>
-                </tr>
-                {% endfor %}
-                
-                <!-- Totals Row -->
-                <tr class="total-row">
-                    <td>TOTAL</td>
-                    <td colspan="{{ exams|sum(attribute='question_count') * 4 }}"></td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_max_clo_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_weighted_clo_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_average_bloom_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.2f"|format(total_clo_results.get('total_weighted_bloom_score', 0)) if total_clo_results else '0.00' }}</td>
-                </tr>
-            </table>
-        
-            <div class="btn-group">
-                <a href="/download_clo_csv" class="submit-btn" style="background-color: #28a745;">Download Report</a>
-                <a href="/summary" class="submit-btn" style="background-color: #6c757d;">← Back to Summary</a>
+        <!-- Course Information Display -->
+        <div style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; backdrop-filter: blur(5px);">
+            <h3 style="color: #667eea; font-size: 1.1rem; margin-bottom: 10px; font-weight: 600;">📚 Course Information</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Course Code:</span>
+                    <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('course_code', 'N/A') }}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Teacher:</span>
+                    <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('teacher_name', 'N/A') }}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Semester:</span>
+                    <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('semester', 'N/A') }}</span>
+                </div>
             </div>
-        </form>
-        <script>
-        (function(){
-            const form = document.querySelector('form');
-            if(!form) return;
-            let timer = null;
-            function autoSubmit(){
-                if(timer) clearTimeout(timer);
-                timer = setTimeout(()=>{ form.submit(); }, 600);
-            }
-            form.querySelectorAll('input[type="number"]').forEach(inp=>{
-                inp.addEventListener('input', autoSubmit);
-                inp.addEventListener('change', autoSubmit);
-            });
-        })();
-        </script>
- 
+        </div>
+
         <!-- CLO Analysis Results Table -->
-
-    <div class="formula-section">
-    <div class="formula-title">📊 CLO Analysis Results</div>
-    <table style="width: 100%; margin-top: 15px;">
-        <thead>
-            <tr>
-                <th style="background: linear-gradient(135deg, #6f42c1, #5a2d91); color: white; padding: 10px;">CLO</th>
-                <th style="background: linear-gradient(135deg, #ffc107, #e0a800); color: black; padding: 10px;">Normalized CLO %</th>
-                <th style="background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; padding: 10px;">Average Bloom Level-CLO</th>
-                <th style="background: linear-gradient(135deg, #20c997, #17a2b8); color: white; padding: 10px;">Student Performance Assessment</th>
-                <th style="background: linear-gradient(135deg, #dc3545, #bd2130); color: white; padding: 10px;">Recommended Instructor Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for clo_idx in range(clos|length) %}
-                {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
-                {% set avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
-                
-                {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
-                {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Excellent mastery with deep, higher-order thinking" %}
-                    {% set recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice" %}
-                {% elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Excellent mastery, but mostly mid-level cognitive tasks" %}
-                    {% set recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach" %}
-                {% elif normalized_clo >= 85 and avg_bloom_level < 2 %}
-                    {% set performance_color = "#ffc107" %}
-                    {% set performance_text = "Superficial mastery — strong scores from low-level tasks" %}
-                    {% set recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking" %}
-                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Strong achievement with rich cognitive engagement" %}
-                    {% set recommendation_text = "Maintain rigor; consider refining support strategies for students" %}
-                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Strong results with balanced cognitive challenge" %}
-                    {% set recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills" %}
-                {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2 %}
-                    {% set performance_color = "#ffc107" %}
-                    {% set performance_text = "Strong scores with limited depth — risk of over-simplification" %}
-                    {% set recommendation_text = "Shift from recall-based to application/analysis-type questions" %}
-                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0 %}
-                    {% set performance_color = "#fd7e14" %}
-                    {% set performance_text = "Moderate learning with challenging conditions" %}
-                    {% set recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed" %}
-                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Moderate achievement with routine or procedural learning" %}
-                    {% set recommendation_text = "Revise both instruction and question difficulty for alignment" %}
-                {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2 %}
-                    {% set performance_color = "#ffc107" %}
-                    {% set performance_text = "Basic understanding with very limited thinking depth" %}
-                    {% set recommendation_text = "Redesign instruction and assessments to encourage deep learning" %}
-                {% elif normalized_clo < 50 and avg_bloom_level > 3.0 %}
-                    {% set performance_color = "#6f42c1" %}
-                    {% set performance_text = "Poor achievement on cognitively rich tasks" %}
-                    {% set recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding" %}
-                {% elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                    {% set performance_color = "#28a745" %}
-                    {% set performance_text = "Low achievement with moderate-level assessment" %}
-                    {% set recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities" %}
-                {% elif normalized_clo < 50 and avg_bloom_level < 2 %}
-                    {% set performance_color = "#dc3545" %}
-                    {% set performance_text = "Critical learning failure — performance and rigor are both weak" %}
-                    {% set recommendation_text = "Full instructional and assessment redesign needed — priority for improvement" %}
-                {% else %}
-                    {% set performance_color = "#6c757d" %}
-                    {% set performance_text = "No data available for assessment" %}
-                    {% set recommendation_text = "Please ensure all data is properly entered" %}
-                {% endif %}
-                
-                <tr style="{% if loop.index0 % 2 == 0 %}background-color: #f8f9fa;{% endif %}">
-                    <td style="font-weight: bold; color: #6f42c1; padding: 8px;">{{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' + (clo_idx + 1)|string }}</td>
-                    <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107', '#fd7e14'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
-                        {{ "%.2f"|format(normalized_clo) }}%
-                    </td>
-                    <td style="background-color: #fd7e14; color: white; font-weight: bold; padding: 8px;">
-                        {{ "%.2f"|format(avg_bloom_level) }}
-                    </td>
-                    <td style="color: {{ performance_color }}; font-weight: bold; padding: 8px;">
-                        {{ performance_text }}
-                    </td>
-                    <td style="padding: 8px;">
-                        {{ recommendation_text }}
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-    <!-- Download Analysis Results Button -->
-    <div class="btn-group" style="margin-top: 20px; text-align: center;">
-        <a href="/download_clo_analysis_csv" class="submit-btn" style="background-color: #17a2b8;">Download Analysis Results</a>
-    </div>
-
-    <!-- Information Tables Section -->
-    <div class="info-section">
-        <!-- Student Performance Interpretation Table -->
-        <div class="info-table-container">
-            <div class="info-table-title">📊 Student Performance Interpretation</div>
-            <table class="info-table">
+        <div class="formula-section">
+            <div class="formula-title">📊 CLO Analysis Results</div>
+            <table style="width: 100%; margin-top: 15px;">
                 <thead>
                     <tr>
-                        <th style="width: 20%;">Normalized CLO Score</th>
-                        <th style="width: 25%;">Normalized Bloom Score</th>
-                        <th style="width: 55%;">Student Performance Interpretation</th>
+                        <th style="background: linear-gradient(135deg, #6f42c1, #5a2d91); color: white; padding: 10px;">CLO</th>
+                        <th style="background: linear-gradient(135deg, #ffc107, #e0a800); color: black; padding: 10px;">Normalized CLO %</th>
+                        <th style="background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; padding: 10px;">Average Bloom Level-CLO</th>
+                        <th style="background: linear-gradient(135deg, #20c997, #17a2b8); color: white; padding: 10px;">Student Performance Assessment</th>
+                        <th style="background: linear-gradient(135deg, #dc3545, #bd2130); color: white; padding: 10px;">Recommended Instructor Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Excellent mastery with deep, higher-order thinking</td>
-                    </tr>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Excellent mastery, but mostly mid-level cognitive tasks</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Superficial mastery — strong scores from low-level tasks</td>
-                    </tr>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Strong achievement with rich cognitive engagement</td>
-                    </tr>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Strong results with balanced cognitive challenge</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Strong scores with limited depth — risk of over-simplification</td>
-                    </tr>
-                    <tr style="background-color: #fff3cd;">
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Moderate learning with challenging conditions</td>
-                    </tr>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Moderate achievement with routine or procedural learning</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Basic understanding with very limited thinking depth</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Poor achievement on cognitively rich tasks</td>
-                    </tr>
-                    <tr style="background-color: #d4edda;">
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Low achievement with moderate-level assessment</td>
-                    </tr>
-                    <tr style="background-color: #f8d7da;">
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Critical learning failure — performance and rigor are both weak</td>
-                    </tr>
+                    {% for clo_idx in range(clos|length) %}
+                        {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
+                        {% set avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
+                        
+                        {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
+                        {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Excellent mastery with deep, higher-order thinking" %}
+                            {% set recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice" %}
+                        {% elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Excellent mastery, but mostly mid-level cognitive tasks" %}
+                            {% set recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach" %}
+                        {% elif normalized_clo >= 85 and avg_bloom_level < 2 %}
+                            {% set performance_color = "#ffc107" %}
+                            {% set performance_text = "Superficial mastery — strong scores from low-level tasks" %}
+                            {% set recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking" %}
+                        {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Strong achievement with rich cognitive engagement" %}
+                            {% set recommendation_text = "Maintain rigor; consider refining support strategies for students" %}
+                        {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Strong results with balanced cognitive challenge" %}
+                            {% set recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills" %}
+                        {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2 %}
+                            {% set performance_color = "#ffc107" %}
+                            {% set performance_text = "Strong scores with limited depth — risk of over-simplification" %}
+                            {% set recommendation_text = "Shift from recall-based to application/analysis-type questions" %}
+                        {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0 %}
+                            {% set performance_color = "#ffc107" %}
+                            {% set performance_text = "Moderate learning with challenging conditions" %}
+                            {% set recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed" %}
+                        {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Moderate achievement with routine or procedural learning" %}
+                            {% set recommendation_text = "Revise both instruction and question difficulty for alignment" %}
+                        {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2 %}
+                            {% set performance_color = "#ffc107" %}
+                            {% set performance_text = "Basic understanding with very limited thinking depth" %}
+                            {% set recommendation_text = "Redesign instruction and assessments to encourage deep learning" %}
+                        {% elif normalized_clo < 50 and avg_bloom_level > 3.0 %}
+                            {% set performance_color = "#dc3545" %}
+                            {% set performance_text = "Poor achievement on cognitively rich tasks" %}
+                            {% set recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding" %}
+                        {% elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
+                            {% set performance_color = "#28a745" %}
+                            {% set performance_text = "Low achievement with moderate-level assessment" %}
+                            {% set recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities" %}
+                        {% elif normalized_clo < 50 and avg_bloom_level < 2 %}
+                            {% set performance_color = "#dc3545" %}
+                            {% set performance_text = "Critical learning failure — performance and rigor are both weak" %}
+                            {% set recommendation_text = "Full instructional and assessment redesign needed — priority for improvement" %}
+                        {% else %}
+                            {% set performance_color = "#6c757d" %}
+                            {% set performance_text = "No data available for assessment" %}
+                            {% set recommendation_text = "Please ensure all data is properly entered" %}
+                        {% endif %}
+                        
+                        <tr{% if loop.index0 % 2 == 0 %} style="background-color: #f8f9fa;"{% endif %}>
+                            <td style="font-weight: bold; color: #6f42c1; padding: 8px;">
+                                {{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' ~ (clo_idx + 1) }}
+                            </td>
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
+                                {{ "%.2f"|format(normalized_clo) }}%
+                            </td>
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
+                                {{ "%.2f"|format(avg_bloom_level) }}
+                            </td>
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                                {{ performance_text }}
+                            </td>
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                                {{ recommendation_text }}
+                            </td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Recommended Instructor Action Table -->
-        <div class="info-table-container">
-            <div class="info-table-title">🎯 Recommended Instructor Action</div>
-            <table class="info-table">
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">Normalized CLO Score</th>
-                        <th style="width: 25%;">Normalized Bloom Score</th>
-                        <th style="width: 55%;">Recommended Instructor Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Maintain teaching and assessment strategy; consider sharing as best practice</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Improve assessment depth (add BL 4 questions) while retaining core approach</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">≥ 85</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Replace low-level assessments with tasks that demand higher-order thinking</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Maintain rigor; consider refining support strategies for students</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Introduce more Bloom Level 3+ tasks to push students beyond procedural skills</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">70-85</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Shift from recall-based to application/analysis-type questions</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Offer better scaffolding and conceptual clarity to help students succeed</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Revise both instruction and question difficulty for alignment</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">50-70</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Redesign instruction and assessments to encourage deep learning</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">> 3.0</td>
-                        <td>Strengthen foundational teaching and reinforce cognitive scaffolding</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">2-3</td>
-                        <td>Increase student support; revisit topic sequencing, and practice opportunities</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: center;">< 50</td>
-                        <td style="text-align: center;">< 2</td>
-                        <td>Full instructional and assessment redesign needed — priority for improvement</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-</div>
+
+        <!-- Information Tables Section -->
+        <div class="info-section">
+            <!-- Student Performance Interpretation Table -->
+            <div class="info-table-container">
+                <div class="info-table-title">📊 Student Performance Interpretation</div>
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Normalized CLO Score</th>
+                            <th style="width: 25%;">Normalized Bloom Score</th>
+                            <th style="width: 55%;">Student Performance Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Excellent mastery with deep, higher-order thinking</td>
+                        </tr>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Excellent mastery, but mostly mid-level cognitive tasks</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Superficial mastery — strong scores from low-level tasks</td>
+                        </tr>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Strong achievement with rich cognitive engagement</td>
+                        </tr>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Strong results with balanced cognitive challenge</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Strong scores with limited depth — risk of over-simplification</td>
+                        </tr>
+                        <tr style="background-color: #fff3cd;">
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Moderate learning with challenging conditions</td>
+                        </tr>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Moderate achievement with routine or procedural learning</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Basic understanding with very limited thinking depth</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #dc3545; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Poor achievement on cognitively rich tasks</td>
+                        </tr>
+                        <tr style="background-color: #d4edda;">
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Low achievement with moderate-level assessment</td>
+                        </tr>
+                        <tr style="background-color: #f8d7da;">
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #dc3545; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Critical learning failure — performance and rigor are both weak</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recommended Instructor Action Table -->
+            <div class="info-table-container">
+                <div class="info-table-title">🎯 Recommended Instructor Action</div>
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Normalized CLO Score</th>
+                            <th style="width: 25%;">Normalized Bloom Score</th>
+                            <th style="width: 55%;">Recommended Instructor Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Maintain teaching and assessment strategy; consider sharing as best practice</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Improve assessment depth (add BL 4 questions) while retaining core approach</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">≥ 85</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Replace low-level assessments with tasks that demand higher-order thinking</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Maintain rigor; consider refining support strategies for students</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Introduce more Bloom Level 3+ tasks to push students beyond procedural skills</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">70-85</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Shift from recall-based to application/analysis-type questions</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Offer better scaffolding and conceptual clarity to help students succeed</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Revise both instruction and question difficulty for alignment</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">50-70</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #ffc107; color: black; font-weight: bold; padding: 8px; border-radius: 4px;">Redesign instruction and assessments to encourage deep learning</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">> 3.0</td>
+                            <td style="background-color: #dc3545; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Strengthen foundational teaching and reinforce cognitive scaffolding</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">2-3</td>
+                            <td style="background-color: #28a745; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Increase student support; revisit topic sequencing, and practice opportunities</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">< 50</td>
+                            <td style="text-align: center;">< 2</td>
+                            <td style="background-color: #dc3545; color: white; font-weight: bold; padding: 8px; border-radius: 4px;">Full instructional and assessment redesign needed — priority for improvement</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Download All Tables Button -->
+        <div class="btn-group" style="margin-top: 20px; text-align: center;">
+            <a href="/download_all_tables" class="submit-btn" style="background-color: #28a745;">📥 Tüm Tabloları İndir (CSV)</a>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="btn-group" style="margin-top: 30px; text-align: center;">
+            <a href="/student_grades" class="submit-btn" style="background-color: #6c757d;">← Back to Student Grades</a>
+            <a href="/summary" class="submit-btn" style="background-color: #007bff;">← Back to Summary</a>
+        </div>
+
+    </div>
 </body>
 </html>

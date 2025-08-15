@@ -91,10 +91,349 @@ input[readonly] {
     background-color: #5936a0;
 }
 
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 2% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 95%;
+    max-width: 1400px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+/* Bloom Mapping Table Styles */
+.bloom-table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-bottom: 20px;
+    border: 2px solid #2c3e50;
+    font-size: 10px;
+}
+.bloom-table th, .bloom-table td { 
+    border: 1px solid #34495e; 
+    padding: 4px 2px; 
+    text-align: center; 
+    vertical-align: middle;
+    font-size: 10px;
+}
+
+.main-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+}
+.evaluation-header {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    font-weight: bold;
+}
+.question-header {
+    background: linear-gradient(135deg, #f39c12, #d68910);
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+}
+.performance-header {
+    background: linear-gradient(135deg, #27ae60, #229954);
+    color: white;
+    font-weight: bold;
+}
+
+.clo-cell {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+    font-weight: bold;
+    min-width: 60px;
+}
+
+.input-cell {
+    background: #ecf0f1;
+    padding: 1px;
+}
+.input-cell input {
+    width: 35px;
+    height: 20px;
+    border: 1px solid #bdc3c7;
+    text-align: center;
+    font-size: 9px;
+    border-radius: 3px;
+    padding: 2px;
+}
+.input-cell input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.input-cell input:not([value=""]) {
+    background-color: #fff3cd;
+    font-weight: bold;
+    color: #856404;
+}
+
+.calc-cell {
+    background: #d5f4e6;
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.total-row {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    color: white;
+    font-weight: bold;
+}
+
+.midterm-col { background-color: rgba(52, 152, 219, 0.1); }
+.final-col { background-color: rgba(155, 89, 182, 0.1); }
+.quiz-col { background-color: rgba(230, 126, 34, 0.1); }
+.project-col { background-color: rgba(231, 76, 60, 0.1); }
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+.submit-btn, .download-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: white;
+    display: inline-block;
+}
+.submit-btn {
+    background: linear-gradient(135deg, #27ae60, #229954);
+}
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+.download-btn {
+    background: #007bff;
+}
+.download-btn:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
 </style>
 </head>
 <body>
 <h2>Student Information and Grade Entry</h2>
+
+<!-- Bloom Level Mapping Button -->
+<button id="bloomModalBtn" class="top-right-button">Bloom Level Mapping</button>
+
+<!-- Course Information Display -->
+<div style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; backdrop-filter: blur(5px);">
+    <h3 style="color: #667eea; font-size: 1.1rem; margin-bottom: 10px; font-weight: 600;">📚 Course Information</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Course Code:</span>
+            <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('course_code', 'N/A') }}</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Teacher:</span>
+            <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('teacher_name', 'N/A') }}</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Semester:</span>
+            <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('semester', 'N/A') }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Bloom Level Mapping Modal -->
+<div id="bloomModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Bloom Level Mapping</h2>
+        
+        <!-- SPM Otomatik Hesaplama Bilgisi -->
+        <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
+            <strong>ℹ️ Bilgi:</strong> SPM (Student Performance Median) değerleri otomatik olarak hesaplanıp girilir. 
+            Öğrenci notları değiştiğinde bu değerler güncellenir.
+        </div>
+
+        <form method="post" id="bloomForm">
+            <table class="bloom-table">
+                <!-- Main Headers -->
+                <tr>
+                    <th class="main-header" rowspan="3">CLO</th>
+                    {% for exam in exams %}
+                        <th class="evaluation-header" colspan="{{ exam.question_count * 4 }}">{{ exam.name }}</th>
+                    {% endfor %}
+                    <th class="performance-header" colspan="4">CLO Performance Values</th>
+                </tr>
+                
+                <!-- Question Numbers -->
+                <tr>
+                    {% for exam in exams %}
+                        {% for q in range(exam.question_count) %}
+                            <th class="question-header" colspan="4">Q{{ q+1 }}</th>
+                        {% endfor %}
+                    {% endfor %}
+                    <th class="performance-header">Max CLO Score</th>
+                    <th class="performance-header">CLO Score</th>
+                    <th class="performance-header">MW-BL</th>
+                    <th class="performance-header">Weighted BL Sum</th>
+                </tr>
+                
+                <!-- Column Headers -->
+                <tr>
+                    {% for exam_idx, exam in enumerate(exams) %}
+                        {% for q in range(exam.question_count) %}
+                            <th class="question-header 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">QCT<br>(%)</th>
+                            <th class="question-header 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">W</th>
+                            <th class="question-header 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">SPM</th>
+                            <th class="question-header 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">BL</th>
+                        {% endfor %}
+                    {% endfor %}
+                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ)" }}</th>
+                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × SPMᵢ)" }}</th>
+                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)/∑(QCTᵢ/100 × Wᵢ)" }}</th>
+                    <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)" }}</th>
+                </tr>
+
+                <!-- CLO Data Rows -->
+                {% for clo_idx, clo in enumerate(clos) %}
+                <tr>
+                    <td class="clo-cell">{{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' + clo|string }}</td>
+                    {% for exam_idx, exam in enumerate(exams) %}
+                        {% for q in range(exam.question_count) %}
+                            {% set global_q_idx = all_questions_flat_map[exam_idx][q] %}
+                            <td class="input-cell 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">
+                                <input type="number" step="0.01" min="0" max="100" 
+                                       name="qct_{{ clo_idx }}_{{ global_q_idx }}" 
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['qct'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['qct'] }}{% endif %}">
+                            </td>
+                            <td class="input-cell 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">
+                                <input type="number" step="0.01" min="0" 
+                                       name="w_{{ clo_idx }}_{{ global_q_idx }}" 
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['w'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['w'] }}{% endif %}">
+                            </td>
+                            <td class="input-cell 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">
+                                <input type="number" step="0.01" min="0" 
+                                       name="spm_{{ clo_idx }}_{{ global_q_idx }}" 
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['spm'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['spm'] }}{% endif %}">
+                            </td>
+                            <td class="input-cell 
+                                {% if exam.name == 'Midterm' %}midterm-col
+                                {% elif exam.name == 'Final' %}final-col
+                                {% elif exam.name == 'Quiz' %}quiz-col
+                                {% elif exam.name == 'Project' %}project-col
+                                {% endif %}">
+                                <input type="number" step="0.1" min="1" max="6" 
+                                       name="bl_{{ clo_idx }}_{{ global_q_idx }}" 
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['bl'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['bl'] }}{% endif %}">
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    <!-- Performance Values -->
+                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['max_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
+                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['weighted_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
+                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
+                    <td class="calc-cell">{{ "%.2f"|format(clo_results[clo_idx]['weighted_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.00' }}</td>
+                </tr>
+                {% endfor %}
+                
+                <!-- Totals Row -->
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td colspan="{{ exams|sum(attribute='question_count') * 4 }}"></td>
+                    <td>{{ "%.3f"|format(total_clo_results['total_max_clo_score']) if total_clo_results else '0.000' }}</td>
+                    <td>{{ "%.3f"|format(total_clo_results['total_weighted_clo_score']) if total_clo_results else '0.000' }}</td>
+                    <td>{{ "%.3f"|format(total_clo_results['total_average_bloom_score']) if total_clo_results else '0.000' }}</td>
+                    <td>{{ "%.2f"|format(total_clo_results.get('total_weighted_bloom_score', 0)) if total_clo_results else '0.00' }}</td>
+                </tr>
+            </table>
+        
+
+        </form>
+        
+        <!-- Save Button for Bloom Mapping -->
+        <div style="text-align: center; margin: 20px 0;">
+          <button type="button" id="saveBloomMappingBtn" style="background: #6f42c1; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+            💾 Bloom Mapping Verilerini Kaydet
+          </button>
+          <div id="bloomSaveStatus" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+        </div>
+    </div>
+</div>
 
 <form id="gradesForm" method="post">
   <div class="tabs">
@@ -226,14 +565,27 @@ input[readonly] {
           </tr>
         </tfoot>
       </table>
+      
+      <!-- Save Button for Each Exam -->
+      <div style="text-align: center; margin: 15px 0;">
+        <button type="button" class="save-exam-btn" data-exam="{{ exam_idx }}" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+          💾 {{ exam.name }} Verilerini Kaydet
+        </button>
+        <div class="save-status" data-exam="{{ exam_idx }}" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
+      </div>
     </div>
   {% endfor %}
 
   <br>
 <button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
-<button type="button" id="downloadCsvButton" class="submit-btn" style="background-color: #28a745;">Download CSV</button>
-<a href="{{ url_for('bloom_level_mapping') }}" class="submit-btn" style="background-color:#6f42c1;">Bloom Level System</a>
 </form>
+
+<!-- Bloom Analysis Page Button at bottom -->
+<div style="margin-top: 30px; text-align: center;">
+    <a href="{{ url_for('bloom_mapping') }}" class="submit-btn" style="background-color: #17a2b8; display: inline-block; margin: 0;">
+        📊 Bloom Analysis Page
+    </a>
+</div>
 
 <script>
 const examsData = JSON.parse('{{ exams | tojson | safe }}');
@@ -414,6 +766,19 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.grade-input').forEach(function(inp) {
     inp.addEventListener('input', recalcCurrentTabStats);
     inp.addEventListener('change', recalcCurrentTabStats);
+    
+    // Otomatik kaydetme (3 saniye sonra)
+    let saveTimer;
+    inp.addEventListener('input', function() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const examIdx = this.closest('.tab-content').id.replace('exam-', '');
+        const saveBtn = document.querySelector(`.save-exam-btn[data-exam="${examIdx}"]`);
+        if (saveBtn) {
+          saveBtn.click();
+        }
+      }, 3000);
+    });
   });
   
   // Sayfa yüklendiğinde ilk sekmenin linkini ayarlar
@@ -432,7 +797,146 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Modal functionality
+    const modal = document.getElementById('bloomModal');
+    const btn = document.getElementById('bloomModalBtn');
+    const span = document.getElementsByClassName('close')[0];
+
+    // Open modal
+    btn.onclick = function() {
+        modal.style.display = 'block';
+    }
+
+    // Close modal
+    span.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Auto-submit functionality for bloom form
+    const bloomForm = document.getElementById('bloomForm');
+    if (bloomForm) {
+        let timer = null;
+        function autoSubmit() {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => { bloomForm.submit(); }, 600);
+        }
+        bloomForm.querySelectorAll('input[type="number"]').forEach(inp => {
+            inp.addEventListener('input', autoSubmit);
+            inp.addEventListener('change', autoSubmit);
+        });
+    }
+
     setTimeout(recalcCurrentTabStats, 100);
+    
+    // Save functionality for each exam
+    document.querySelectorAll('.save-exam-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const examIdx = this.getAttribute('data-exam');
+            const statusDiv = document.querySelector(`.save-status[data-exam="${examIdx}"]`);
+            
+            // Get all student data for this exam
+            const examData = {
+                exam_idx: parseInt(examIdx),
+                students: []
+            };
+            
+            const currentTab = document.getElementById(`exam-${examIdx}`);
+            const studentRows = currentTab.querySelectorAll('.student-row');
+            
+            studentRows.forEach((row, studentIdx) => {
+                const studentNumber = row.querySelector('input[name^="student_number_"]').value;
+                const studentName = row.querySelector('input[name^="student_name_"]').value;
+                const grades = [];
+                
+                // Get grades for this exam
+                const gradeInputs = row.querySelectorAll('input[name^="grade_"]');
+                gradeInputs.forEach(input => {
+                    const grade = parseFloat(input.value) || 0;
+                    grades.push(grade);
+                });
+                
+                examData.students.push({
+                    student_idx: studentIdx,
+                    number: studentNumber,
+                    name: studentName,
+                    grades: grades
+                });
+            });
+            
+            // Save to database via AJAX
+            fetch('/save_exam_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(examData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = '✅ Veriler başarıyla kaydedildi!';
+                    statusDiv.style.color = '#28a745';
+                    setTimeout(() => {
+                        statusDiv.innerHTML = '';
+                    }, 3000);
+                } else {
+                    statusDiv.innerHTML = '❌ Kaydetme hatası: ' + data.error;
+                    statusDiv.style.color = '#dc3545';
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = '❌ Bağlantı hatası!';
+                statusDiv.style.color = '#dc3545';
+            });
+        });
+    });
+    
+    // Save functionality for Bloom Mapping
+    document.getElementById('saveBloomMappingBtn').addEventListener('click', function() {
+        const statusDiv = document.getElementById('bloomSaveStatus');
+        const form = document.getElementById('bloomForm');
+        
+        // Get all form data
+        const formData = new FormData(form);
+        const bloomData = {};
+        
+        for (let [key, value] of formData.entries()) {
+            bloomData[key] = value;
+        }
+        
+        // Save to database via AJAX
+        fetch('/save_bloom_mapping', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bloomData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                statusDiv.innerHTML = '✅ Bloom Mapping verileri başarıyla kaydedildi!';
+                statusDiv.style.color = '#28a745';
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            } else {
+                statusDiv.innerHTML = '❌ Kaydetme hatası: ' + data.error;
+                statusDiv.style.color = '#dc3545';
+            }
+        })
+        .catch(error => {
+            statusDiv.innerHTML = '❌ Bağlantı hatası!';
+            statusDiv.style.color = '#dc3545';
+        });
+    });
 });
 </script>
 </body>

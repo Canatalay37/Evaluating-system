@@ -1,108 +1,706 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<title>Question Points</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-form { background: #f5f5f5; padding: 20px; border-radius: 8px; }
-input[type="number"] { padding: 8px; margin: 2px; border: 1px solid #ddd; border-radius: 4px; width: 80px; }
-input[type="submit"] { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; }
-.exam-section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; }
-.question-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Points - Faculty of Civil and Environmental Engineering</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+            border-bottom: 3px solid #764ba2;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 80px;
+            width: auto;
+            border-radius: 0;
+            box-shadow: none;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .course-info {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .course-info h3 {
+            color: #667eea;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .course-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .course-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .course-info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .course-info-value {
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        .content-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-section {
+            background: rgba(209, 236, 241, 0.8);
+            border: 1px solid rgba(190, 229, 235, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #0c5460;
+            backdrop-filter: blur(5px);
+        }
+
+        .exam-section {
+            background: rgba(248, 249, 250, 0.9);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            border: 1px solid rgba(223, 230, 237, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .exam-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .question-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .question-card {
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .question-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        .question-card h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            width: 100px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: rgba(248, 249, 250, 0.8);
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .clo-selection {
+            margin: 10px 0;
+        }
+
+        .clo-selection h5 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #34495e;
+        }
+
+        .clo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px;
+            align-items: center;
+        }
+
+        .clo-option {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e0e6ed;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .clo-option:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+
+        .clo-option input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .warning-text {
+            margin-top: 15px;
+            color: #856404;
+            background: rgba(255, 243, 205, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Bloom Level Table */
+        .bloom-table-container {
+            margin-top: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .bloom-table-container h3 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px 8px;
+        }
+
+        table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        table tr:nth-child(even) {
+            background-color: rgba(248, 249, 250, 0.8);
+        }
+
+        table tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .header-title {
+                font-size: 1.5rem;
+            }
+
+            .question-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .clo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+        }
+
+        /* Animation for sections */
+        .exam-section {
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .exam-section:nth-child(2) { animation-delay: 0.1s; }
+        .exam-section:nth-child(3) { animation-delay: 0.2s; }
+        .exam-section:nth-child(4) { animation-delay: 0.3s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body>
-<h2>Question Points</h2>
-{% if students_per_exam %}
-  <div style="margin-bottom:10px;color:#555;">
-    {% for exam_idx, exam in enumerate(exams) %}
-      <div>
-        <strong>{{ exam['name'] }}</strong>: Students = {{ students_per_exam[exam_idx] if exam_idx < students_per_exam|length else 'N/A' }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-<form method="post" id="qpForm">
-  {% for exam_idx, exam in enumerate(exams) %}
-    <div class="exam-section">
-      <h3>{{ exam['name'] }}</h3>
-      <div class="question-grid">
-        {% for q in range(exam['question_count']|int) %}
-          <div style="border:1px solid #eee; border-radius:4px; padding:8px; margin-bottom:8px; background:#fafbfc;">
-            <label>Soru {{ q+1 }} Puanı:
-              <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
-            </label><br>
-            <div style="margin:6px 0;">
-              <div style="font-weight:600; margin-bottom:4px;">CLO Seçimi:</div>
-              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:6px; align-items:center;">
-                {% for idx in range(clo_count) %}
-                  <label style="display:flex; gap:8px; align-items:center; background:#fff; border:1px solid #eee; padding:4px 6px; border-radius:4px;">
-                    <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
-                    <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
-                  </label>
-                {% endfor %}
-              </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            <div class="header-text">
+                <h1 class="header-title">Exam Evaluation System</h1>
+                <p class="header-subtitle">Faculty of Civil and Environmental Engineering</p>
+                
+                <!-- Course Information Display -->
+                <div class="course-info">
+                    <h3>📚 Course Information</h3>
+                    <div class="course-info-grid">
+                        <div class="course-info-item">
+                            <span class="course-info-label">Course Code:</span>
+                            <span class="course-info-value">{{ session.get('course_code', 'N/A') }}</span>
+                        </div>
+                        <div class="course-info-item">
+                            <span class="course-info-label">Teacher:</span>
+                            <span class="course-info-value">{{ session.get('teacher_name', 'N/A') }}</span>
+                        </div>
+                        <div class="course-info-item">
+                            <span class="course-info-label">Semester:</span>
+                            <span class="course-info-value">{{ session.get('semester', 'N/A') }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <label>QCT (%):
-              <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required>
-            </label><br>
-            <label>BL:
-              <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required>
-            </label>
-          </div>
-        {% endfor %}
-      </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Question Points Configuration</h2>
+                </div>
+
+                {% if students_per_exam %}
+                    <div class="info-section">
+                        <strong>📊 Student Count Information:</strong><br>
+                        {% for exam_idx, exam in enumerate(exams) %}
+                            <strong>{{ exam['name'] }}</strong>: {{ students_per_exam[exam_idx] if exam_idx < students_per_exam|length else 'N/A' }} students
+                            {% if not loop.last %} | {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" id="qpForm">
+                    {% for exam_idx, exam in enumerate(exams) %}
+                        <div class="exam-section">
+                            <h3>{{ exam['name'] }}</h3>
+                            <div class="question-grid">
+                                {% for q in range(exam['question_count']|int) %}
+                                    <div class="question-card">
+                                        <h4>Question {{ q+1 }}</h4>
+                                        
+                                        <label>Points:
+                                            <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
+                                        </label>
+
+                                        <div class="clo-selection">
+                                            <h5>CLO Selection:</h5>
+                                            <div class="clo-grid">
+                                                {% for idx in range(clo_count) %}
+                                                    <label class="clo-option">
+                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
+                                                        <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
+                                                    </label>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+
+                                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                            <label>QCT (%):
+                                                <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required>
+                                            </label>
+                                            <label>BL:
+                                                <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required>
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="warning-text">
+                                <strong>⚠️ Important:</strong> Total points for {{ exam['name'] }} must equal 100.
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="submit-btn">Save and Continue to Student Grades →</button>
+                </form>
+            </div>
+
+            <!-- Bloom Level Reference Table -->
+            <div class="bloom-table-container">
+                <h3>📚 Bloom's Taxonomy Reference</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bloom Level</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Example Keywords</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1</strong></td>
+                            <td>Remember</td>
+                            <td>Recall facts and basic concepts</td>
+                            <td>Define, list, describe, identify</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2</strong></td>
+                            <td>Understand</td>
+                            <td>Explain ideas or concepts</td>
+                            <td>Explain, summarize, interpret, classify</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3</strong></td>
+                            <td>Apply</td>
+                            <td>Use information in new situations</td>
+                            <td>Apply, execute, implement, solve</td>
+                        </tr>
+                        <tr>
+                            <td><strong>4</strong></td>
+                            <td>Analyze</td>
+                            <td>Draw connections among ideas</td>
+                            <td>Analyze, compare, contrast, examine</td>
+                        </tr>
+                        <tr>
+                            <td><strong>5</strong></td>
+                            <td>Evaluate</td>
+                            <td>Justify a stand or decision</td>
+                            <td>Evaluate, critique, judge, defend</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6</strong></td>
+                            <td>Create</td>
+                            <td>Produce new or original work</td>
+                            <td>Create, design, construct, develop</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  {% endfor %}
-  <div style="margin-top:8px;color:#666;">Her sınav içindeki soru puanlarının toplamı 100 olmalıdır.</div>
-  <input type="submit" value="Kaydet ve Devam Et">
-</form>
-<script>
-// Her sınavın soru puanları toplamı 100 olmalı
-document.getElementById('qpForm').addEventListener('submit', function(e) {
-  const examSections = Array.from(document.querySelectorAll('.exam-section'));
-  for (let examIdx = 0; examIdx < examSections.length; examIdx++) {
-    const inputs = examSections[examIdx].querySelectorAll('input[name^="points_' + examIdx + '_"]');
-    let sum = 0;
-    inputs.forEach(inp => { const v = parseFloat(inp.value || '0'); if (!isNaN(v)) sum += v; });
-    if (sum !== 100) {
-      e.preventDefault();
-      alert(`"${document.querySelectorAll('.exam-section h3')[examIdx].textContent}" için soru puanları toplamı ${sum}. Toplam 100 olmalı.`);
-      return false;
-    }
-  }
-});
-</script>
-<hr style="margin-top:32px;">
-<div style="max-width:700px; margin:auto;">
-  <h3>Bloom Level Bilgilendirme Tablosu</h3>
-  <table border="1" cellpadding="6" cellspacing="0" style="width:100%; border-collapse:collapse; text-align:center;">
-    <tr style="background:#f5f5f5; font-weight:bold;">
-      <th>BL</th>
-      <th>Bloom Level</th>
-      <th>Cognitive Action Verbs</th>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td>Remember</td>
-      <td>Define, list, name, identify, recall</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>Understand</td>
-      <td>Explain, describe, summarize, classify, interpret</td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>Apply</td>
-      <td>Use, calculate, demonstrate, solve, implement</td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td>Analyze/Evaluate/Create</td>
-      <td>Analyze, compare, justify, critique, design, develop, construct</td>
-    </tr>
-  </table>
-</div>
-</body>
-</html>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
+    </footer>
+
+    <script>
+        // Form validation to ensure total points equal 100 for each exam
+        document.getElementById('qpForm').addEventListener('submit', function(e) {
+            // Make sure 'exams' is available as a JS variable
+            var exams;
+            try {
+                exams = JSON.parse('{{ exams | tojson | safe }}');
+            } catch (err) {
+                exams = JSON.parse('{{ exams | tojson | safe }}');
+            }
+            var isValid = true;
+            var errorMessage = '';
+
+            if (!Array.isArray(exams)) {
+                isValid = false;
+                errorMessage = "Exam data is not available or is invalid.";
+            } else {
+                exams.forEach(function(exam, examIdx) {
+                let totalPoints = 0;
+                for (let q = 0; q < exam.question_count; q++) {
+                    const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
+                    if (pointsInput && pointsInput.value) {
+                        totalPoints += parseFloat(pointsInput.value);
+                    }
+                }
+
+                if (Math.abs(totalPoints - 100) > 0.01) {
+                    isValid = false;
+                    errorMessage += `${exam.name} total points: ${totalPoints.toFixed(2)}. Must equal 100.\n`;
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Error:\n' + errorMessage);
+                return;
+                    }
+                }
+                
+                // Update or create total display
+                const examSection = document.querySelector(`.exam-section:nth-of-type(${examIdx + 1})`);
+                let totalDisplay = examSection.querySelector('.points-total-display');
+                if (!totalDisplay) {
+                    totalDisplay = document.createElement('div');
+                    totalDisplay.className = 'points-total-display';
+                    totalDisplay.style.cssText = `
+                        background: ${Math.abs(totalPoints - 100) < 0.01 ? '#d4edda' : '#f8d7da'};
+                        border: 1px solid ${Math.abs(totalPoints - 100) < 0.01 ? '#c3e6cb' : '#f5c6cb'};
+                        color: ${Math.abs(totalPoints - 100) < 0.01 ? '#155724' : '#721c24'};
+                        padding: 10px;
+                        border-radius: 8px;
+                        margin-top: 15px;
+                        text-align: center;
+                        font-weight: bold;
+                    `;
+                    examSection.appendChild(totalDisplay);
+                }
+                
+                totalDisplay.innerHTML = `Total Points: ${totalPoints.toFixed(2)} / 100 ${Math.abs(totalPoints - 100) < 0.01 ? '✓' : '⚠️'}`;
+                totalDisplay.style.background = Math.abs(totalPoints - 100) < 0.01 ? '#d4edda' : '#f8d7da';
+                totalDisplay.style.borderColor = Math.abs(totalPoints - 100) < 0.01 ? '#c3e6cb' : '#f5c6cb';
+                totalDisplay.style.color = Math.abs(totalPoints - 100) < 0.01 ? '#155724' : '#721c24';
+            });
+        }
+
+        // Add event listeners to all point inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[name^="points_"]').forEach(input => {
+                input.addEventListener('input', updatePointsTotal);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            // Initial calculation
+            updatePointsTotal();
+        });
+                input.addEventListener('input', updatePointsTotal);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            // Initial calculation
+            updatePointsTotal();
+        });
+                input.addEventListener('input', updatePointsTotal);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            // Initial calculation
+            updatePointsTotal();
+        });
+                document.querySelectorAll('input[name^="points_"]').forEach(input => {
+                    input.addEventListener('input', updatePointsTotal);
+                    input.addEventListener('change', updatePointsTotal);
+                });
+
+                // Initial calculation
+                updatePointsTotal();
