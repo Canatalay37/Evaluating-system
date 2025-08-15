@@ -11,6 +11,19 @@
             box-sizing: border-box;
         }
 
+        /* Performance optimizations */
+        body {
+            will-change: auto;
+        }
+
+        .exam-section {
+            will-change: auto;
+        }
+
+        .question-card {
+            will-change: auto;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,7 +34,7 @@
             overflow-x: hidden;
         }
 
-        /* Animated background elements */
+        /* Animated background elements (optimized) */
         body::before {
             content: '';
             position: absolute;
@@ -31,8 +44,9 @@
             height: 200%;
             background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: float 20s linear infinite;
+            animation: float 30s linear infinite;
             z-index: 1;
+            will-change: transform;
         }
 
         @keyframes float {
@@ -40,10 +54,17 @@
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
+        /* Disable background animation on low-end devices */
+        @media (prefers-reduced-motion: reduce) {
+            body::before {
+                animation: none;
+            }
+        }
+
         /* Header */
         .header {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(5px);
             padding: 1.5rem 2rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             position: relative;
@@ -144,7 +165,7 @@
 
         .card {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(8px);
             padding: 2rem;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
@@ -310,6 +331,12 @@
             width: 100%;
         }
 
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         .submit-btn::before {
             content: '';
             position: absolute;
@@ -346,7 +373,7 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             padding: 20px;
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(8px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
@@ -393,7 +420,7 @@
             color: white;
             text-align: center;
             padding: 1.5rem;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(5px);
             position: relative;
             z-index: 10;
         }
@@ -429,24 +456,16 @@
             }
         }
 
-        /* Animation for sections */
+        /* Animation for sections (optimized) */
         .exam-section {
-            animation: slideIn 0.5s ease forwards;
-            opacity: 0;
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .exam-section:nth-child(2) { animation-delay: 0.1s; }
-        .exam-section:nth-child(3) { animation-delay: 0.2s; }
-        .exam-section:nth-child(4) { animation-delay: 0.3s; }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        /* Disable animations on low-end devices */
+        @media (prefers-reduced-motion: reduce) {
+            .exam-section {
+                animation: none;
             }
         }
     </style>
@@ -510,7 +529,8 @@
                                         <h4>Question {{ q+1 }}</h4>
                                         
                                         <label>Points:
-                                            <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required>
+                                            <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required 
+                                                   onchange="validatePoints(this)" oninput="validatePoints(this)">
                                         </label>
 
                                         <div class="clo-selection">
@@ -518,7 +538,7 @@
                                             <div class="clo-grid">
                                                 {% for idx in range(clo_count) %}
                                                     <label class="clo-option">
-                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
+                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}" id="clo_{{exam_idx}}_{{q}}_{{idx}}">
                                                         <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
                                                     </label>
                                                 {% endfor %}
@@ -527,10 +547,12 @@
 
                                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                                             <label>QCT (%):
-                                                <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required>
+                                                <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required 
+                                                       onchange="validateQCT(this)" oninput="validateQCT(this)">
                                             </label>
                                             <label>BL:
-                                                <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required>
+                                                <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required
+                                                       onchange="validateBL(this)" oninput="validateBL(this)">
                                             </label>
                                         </div>
                                     </div>
@@ -540,11 +562,13 @@
                             <div class="warning-text">
                                 <strong>⚠️ Important:</strong> Total points for {{ exam['name'] }} must equal 100.
                             </div>
+                            <div class="points-total-display" style="display: none;"></div>
+                            <div class="validation-summary" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none; font-size: 0.9rem;"></div>
                         </div>
                     {% endfor %}
                     
                     <!-- Submit Button -->
-                    <button type="submit" class="submit-btn">Save and Continue to Student Grades →</button>
+                    <button type="submit" class="submit-btn" disabled>Save and Continue to Student Grades →</button>
                 </form>
             </div>
 
@@ -616,8 +640,10 @@
             try {
                 exams = JSON.parse('{{ exams | tojson | safe }}');
             } catch (err) {
-                exams = JSON.parse('{{ exams | tojson | safe }}');
+                console.error('Error parsing exams data:', err);
+                return;
             }
+            
             var isValid = true;
             var errorMessage = '';
 
@@ -626,81 +652,272 @@
                 errorMessage = "Exam data is not available or is invalid.";
             } else {
                 exams.forEach(function(exam, examIdx) {
-                let totalPoints = 0;
-                for (let q = 0; q < exam.question_count; q++) {
-                    const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
-                    if (pointsInput && pointsInput.value) {
-                        totalPoints += parseFloat(pointsInput.value);
+                    let totalPoints = 0;
+                    let cloSelectionStatus = [];
+                    
+                    for (let q = 0; q < exam.question_count; q++) {
+                        const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
+                        if (pointsInput && pointsInput.value) {
+                            totalPoints += parseFloat(pointsInput.value);
+                        }
+                        
+                        // CLO seçimi kontrolü
+                        const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
+                        cloSelectionStatus.push(cloCheckboxes.length > 0);
+                        
+                        // QCT ve BL değerlerini kontrol et
+                        const qctInput = document.querySelector(`input[name="qct_${examIdx}_${q}"]`);
+                        const blInput = document.querySelector(`input[name="bl_${examIdx}_${q}"]`);
+                        
+                        if (qctInput && qctInput.value) {
+                            const qct = parseFloat(qctInput.value);
+                            if (qct < 0 || qct > 100) {
+                                isValid = false;
+                                errorMessage += `${exam.name} Question ${q+1} QCT value must be between 0 and 100.\n`;
+                            }
+                        }
+                        
+                        if (blInput && blInput.value) {
+                            const bl = parseFloat(blInput.value);
+                            if (bl < 1 || bl > 6) {
+                                isValid = false;
+                                errorMessage += `${exam.name} Question ${q+1} Bloom Level must be between 1 and 6.\n`;
+                            }
+                        }
                     }
-                }
 
-                if (Math.abs(totalPoints - 100) > 0.01) {
-                    isValid = false;
-                    errorMessage += `${exam.name} total points: ${totalPoints.toFixed(2)}. Must equal 100.\n`;
-                }
-            });
+                    if (Math.abs(totalPoints - 100) > 0.01) {
+                        isValid = false;
+                        errorMessage += `${exam.name} total points: ${totalPoints.toFixed(2)}. Must equal 100.\n`;
+                    }
+                    
+                    if (cloSelectionStatus.some(status => !status)) {
+                        isValid = false;
+                        errorMessage += `${exam.name} has questions without CLO selections. Please select at least one CLO for each question.\n`;
+                    }
+                });
+            }
 
             if (!isValid) {
                 e.preventDefault();
                 alert('Error:\n' + errorMessage);
                 return;
-                    }
-                }
-                
-                // Update or create total display
-                const examSection = document.querySelector(`.exam-section:nth-of-type(${examIdx + 1})`);
-                let totalDisplay = examSection.querySelector('.points-total-display');
-                if (!totalDisplay) {
-                    totalDisplay = document.createElement('div');
-                    totalDisplay.className = 'points-total-display';
-                    totalDisplay.style.cssText = `
-                        background: ${Math.abs(totalPoints - 100) < 0.01 ? '#d4edda' : '#f8d7da'};
-                        border: 1px solid ${Math.abs(totalPoints - 100) < 0.01 ? '#c3e6cb' : '#f5c6cb'};
-                        color: ${Math.abs(totalPoints - 100) < 0.01 ? '#155724' : '#721c24'};
-                        padding: 10px;
-                        border-radius: 8px;
-                        margin-top: 15px;
-                        text-align: center;
-                        font-weight: bold;
-                    `;
-                    examSection.appendChild(totalDisplay);
-                }
-                
-                totalDisplay.innerHTML = `Total Points: ${totalPoints.toFixed(2)} / 100 ${Math.abs(totalPoints - 100) < 0.01 ? '✓' : '⚠️'}`;
-                totalDisplay.style.background = Math.abs(totalPoints - 100) < 0.01 ? '#d4edda' : '#f8d7da';
-                totalDisplay.style.borderColor = Math.abs(totalPoints - 100) < 0.01 ? '#c3e6cb' : '#f5c6cb';
-                totalDisplay.style.color = Math.abs(totalPoints - 100) < 0.01 ? '#155724' : '#721c24';
-            });
+            }
+        });
+
+        // Function to validate points input
+        function validatePoints(input) {
+            const value = parseFloat(input.value);
+            if (value < 0 || value > 100) {
+                input.style.borderColor = '#dc3545';
+                input.style.backgroundColor = '#f8d7da';
+            } else {
+                input.style.borderColor = '#28a745';
+                input.style.backgroundColor = '#d4edda';
+            }
         }
 
-        // Add event listeners to all point inputs
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('input[name^="points_"]').forEach(input => {
-                input.addEventListener('input', updatePointsTotal);
-                input.addEventListener('change', updatePointsTotal);
-            });
+        // Function to validate QCT input
+        function validateQCT(input) {
+            const value = parseFloat(input.value);
+            if (value < 0 || value > 100) {
+                input.style.borderColor = '#dc3545';
+                input.style.backgroundColor = '#f8d7da';
+            } else {
+                input.style.borderColor = '#28a745';
+                input.style.backgroundColor = '#d4edda';
+            }
+        }
 
-            // Initial calculation
-            updatePointsTotal();
-        });
-                input.addEventListener('input', updatePointsTotal);
-                input.addEventListener('change', updatePointsTotal);
-            });
+        // Function to validate BL input
+        function validateBL(input) {
+            const value = parseFloat(input.value);
+            if (value < 1 || value > 6) {
+                input.style.borderColor = '#dc3545';
+                input.style.backgroundColor = '#f8d7da';
+            } else {
+                input.style.borderColor = '#28a745';
+                input.style.backgroundColor = '#d4edda';
+            }
+        }
 
-            // Initial calculation
-            updatePointsTotal();
-        });
-                input.addEventListener('input', updatePointsTotal);
-                input.addEventListener('change', updatePointsTotal);
-            });
+        // Debounce function to limit function calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
-            // Initial calculation
-            updatePointsTotal();
-        });
-                document.querySelectorAll('input[name^="points_"]').forEach(input => {
-                    input.addEventListener('input', updatePointsTotal);
-                    input.addEventListener('change', updatePointsTotal);
+        // Function to update points total display (optimized)
+        function updatePointsTotal() {
+            try {
+                var exams = JSON.parse('{{ exams | tojson | safe }}');
+                if (!Array.isArray(exams)) return;
+                
+                // Batch DOM updates
+                const updates = [];
+                
+                exams.forEach(function(exam, examIdx) {
+                    let totalPoints = 0;
+                    let cloSelectionStatus = [];
+                    
+                    for (let q = 0; q < exam.question_count; q++) {
+                        const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
+                        if (pointsInput && pointsInput.value) {
+                            totalPoints += parseFloat(pointsInput.value);
+                        }
+                        
+                        const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
+                        cloSelectionStatus.push(cloCheckboxes.length > 0);
+                    }
+                    
+                    const pointsValid = Math.abs(totalPoints - 100) < 0.01;
+                    const cloValid = cloSelectionStatus.every(status => status);
+                    const overallValid = pointsValid && cloValid;
+                    
+                    updates.push({
+                        examIdx,
+                        totalPoints,
+                        pointsValid,
+                        cloValid,
+                        overallValid
+                    });
                 });
+                
+                // Apply all updates at once
+                requestAnimationFrame(() => {
+                    updates.forEach(update => {
+                        const examSection = document.querySelector(`.exam-section:nth-of-type(${update.examIdx + 1})`);
+                        if (examSection) {
+                            // Update total display
+                            let totalDisplay = examSection.querySelector('.points-total-display');
+                            if (!totalDisplay) {
+                                totalDisplay = document.createElement('div');
+                                totalDisplay.className = 'points-total-display';
+                                examSection.appendChild(totalDisplay);
+                            }
+                            
+                            totalDisplay.style.cssText = `
+                                background: ${update.overallValid ? '#d4edda' : '#f8d7da'};
+                                border: 1px solid ${update.overallValid ? '#c3e6cb' : '#f5c6cb'};
+                                color: ${update.overallValid ? '#155724' : '#721c24'};
+                                padding: 10px;
+                                border-radius: 8px;
+                                margin-top: 15px;
+                                text-align: center;
+                                font-weight: bold;
+                                font-size: 0.9rem;
+                            `;
+                            
+                            let statusText = `Total Points: ${update.totalPoints.toFixed(2)} / 100 ${update.pointsValid ? '✓' : '⚠️'}`;
+                            if (!update.cloValid) {
+                                statusText += ' | CLO Selection: ⚠️';
+                            } else {
+                                statusText += ' | CLO Selection: ✓';
+                            }
+                            
+                            totalDisplay.innerHTML = statusText;
+                            totalDisplay.style.display = 'block';
+                        }
+                    });
+                    
+                    // Update submit button state
+                    updateSubmitButtonState();
+                });
+            } catch (err) {
+                console.error('Error updating points total:', err);
+            }
+        }
 
-                // Initial calculation
-                updatePointsTotal();
+        // Function to update submit button state
+        function updateSubmitButtonState() {
+            try {
+                var exams = JSON.parse('{{ exams | tojson | safe }}');
+                if (!Array.isArray(exams)) return;
+                
+                let allValid = true;
+                
+                exams.forEach(function(exam, examIdx) {
+                    let totalPoints = 0;
+                    let cloSelectionStatus = [];
+                    
+                    for (let q = 0; q < exam.question_count; q++) {
+                        const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
+                        if (pointsInput && pointsInput.value) {
+                            totalPoints += parseFloat(pointsInput.value);
+                        }
+                        
+                        const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
+                        cloSelectionStatus.push(cloCheckboxes.length > 0);
+                        
+                        const qctInput = document.querySelector(`input[name="qct_${examIdx}_${q}"]`);
+                        const blInput = document.querySelector(`input[name="bl_${examIdx}_${q}"]`);
+                        
+                        if (qctInput && qctInput.value) {
+                            const qct = parseFloat(qctInput.value);
+                            if (qct < 0 || qct > 100) {
+                                allValid = false;
+                            }
+                        }
+                        
+                        if (blInput && blInput.value) {
+                            const bl = parseFloat(blInput.value);
+                            if (bl < 1 || bl > 6) {
+                                allValid = false;
+                            }
+                        }
+                    }
+                    
+                    if (Math.abs(totalPoints - 100) > 0.01 || cloSelectionStatus.some(status => !status)) {
+                        allValid = false;
+                    }
+                });
+                
+                const submitBtn = document.querySelector('.submit-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = !allValid;
+                }
+            } catch (err) {
+                console.error('Error updating submit button state:', err);
+            }
+        }
+
+        // Add event listeners to all point inputs and CLO checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debounced version of updatePointsTotal for better performance
+            const debouncedUpdate = debounce(updatePointsTotal, 150);
+            
+            // Add event listeners to point inputs
+            document.querySelectorAll('input[name^="points_"]').forEach(input => {
+                input.addEventListener('input', debouncedUpdate);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            // Add event listeners to CLO checkboxes
+            document.querySelectorAll('input[name^="clo_"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updatePointsTotal);
+            });
+
+            // Add event listeners to QCT and BL inputs
+            document.querySelectorAll('input[name^="qct_"]').forEach(input => {
+                input.addEventListener('input', debouncedUpdate);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            document.querySelectorAll('input[name^="bl_"]').forEach(input => {
+                input.addEventListener('input', debouncedUpdate);
+                input.addEventListener('change', updatePointsTotal);
+            });
+
+            // Initial calculation
+            updatePointsTotal();
+            
+            // Initial submit button state
+            updateSubmitButtonState();
+        });

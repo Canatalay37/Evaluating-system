@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
@@ -240,10 +241,26 @@ def question_points():
                         if clo:
                             mapping = QuestionCLOMapping(question_id=question.id, clo_id=clo.id)
                             db.session.add(mapping)
+                        else:
+                            # CLO bulunamadıysa log ekle
+                            print(f"CLO with order {clo_idx} not found for course {course_id}")
+                            # Hata durumunda kullanıcıya bilgi ver
+                            return f"CLO {clo_idx} not found for course. Please check CLO configuration.", 400
+                    
+                    # En az bir CLO seçilmiş olmalı
+                    if not selected_clos:
+                        return f"Question {q+1} in {exam['name']} must have at least one CLO selected.", 400
+                    
+                    # QCT ve BL değerlerini kontrol et
+                    if qct < 0 or qct > 100:
+                        return f"Question {q+1} in {exam['name']} QCT value must be between 0 and 100.", 400
+                    
+                    if bl < 1 or bl > 6:
+                        return f"Question {q+1} in {exam['name']} Bloom Level must be between 1 and 6.", 400
                 
                 questions.append({
                     "points": points,
-                    "clo": clo_idx,
+                    "clo": selected_clos,
                     "qct": qct,
                     "w": w_val,
                     "bl": bl,
