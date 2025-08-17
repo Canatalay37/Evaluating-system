@@ -154,6 +154,7 @@
         <!-- CLO Analysis Results Table -->
         <div class="formula-section">
             <div class="formula-title">📊 CLO Analysis Results</div>
+            
             <table style="width: 100%; margin-top: 15px;">
                 <thead>
                     <tr>
@@ -166,8 +167,18 @@
                 </thead>
                 <tbody>
                     {% for clo_idx in range(clos|length) %}
-                        {% set normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['max_clo_score'] > 0 else 0 %}
-                        {% set avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results and clo_idx < clo_results|length and clo_results[clo_idx]['average_bloom_score'] > 0 else 0 %}
+                        {% if clo_results and clo_idx < clo_results|length %}
+                            {% set clo_result = clo_results[clo_idx] %}
+                            
+                            {# Normalized CLO % = (Weighted CLO Score / Max CLO Score) × 100 #}
+                            {% set normalized_clo = (clo_result.weighted_clo_score / clo_result.max_clo_score * 100) if clo_result.max_clo_score > 0 else 0 %}
+                            
+                            {# Average Bloom Level-CLO = Weighted BL Sum / MW-BL #}
+                            {% set avg_bloom_level = (clo_result.weighted_bloom_score / clo_result.max_clo_score) if clo_result.max_clo_score > 0 else 0 %}
+                        {% else %}
+                            {% set normalized_clo = 0 %}
+                            {% set avg_bloom_level = 0 %}
+                        {% endif %}
                         
                         {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
                         {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
@@ -234,10 +245,10 @@
                             <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
                                 {{ "%.2f"|format(avg_bloom_level) }}
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
                                 {{ performance_text }}
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color in ['#ffc107'] %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
                                 {{ recommendation_text }}
                             </td>
                         </tr>

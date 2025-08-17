@@ -217,7 +217,8 @@ def question_points():
                 running_sum += points
                 clo_keys = request.form.getlist(f"clo_{idx}_{q}")
                 selected_clos = [int(c) for c in clo_keys]
-                qct = float(request.form.get(f"qct_{idx}_{q}", 0))
+                # QCT değerini otomatik hesapla: (Soru puanı × Sınav yüzdesi) ÷ 100
+                qct = (points * exam["weight"]) / 100
                 bl = float(request.form.get(f"bl_{idx}_{q}", 0))
                 n_clo = len(selected_clos)
                 w_val = 1.0 / n_clo if n_clo > 0 else 0.0
@@ -251,21 +252,23 @@ def question_points():
                     if not selected_clos:
                         return f"Question {q+1} in {exam['name']} must have at least one CLO selected.", 400
                     
-                    # QCT ve BL değerlerini kontrol et
-                    if qct < 0 or qct > 100:
-                        return f"Question {q+1} in {exam['name']} QCT value must be between 0 and 100.", 400
+                    # QCT artık otomatik hesaplandığı için validation gerekmez
+                    # if qct < 0 or qct > 100:
+                    #     return f"Question {q+1} in {exam['name']} QCT value must be between 0 and 100.", 400
                     
                     if bl < 1 or bl > 6:
                         return f"Question {q+1} in {exam['name']} Bloom Level must be between 1 and 6.", 400
                 
-                questions.append({
-                    "points": points,
-                    "clo": selected_clos,
-                    "qct": qct,
-                    "w": w_val,
-                    "bl": bl,
-                    "question_idx": q
-                })
+                # Her CLO için ayrı kayıt oluştur
+                for clo_idx in selected_clos:
+                    questions.append({
+                        "points": points,
+                        "clo": clo_idx,  # Tek bir CLO ID
+                        "qct": qct,
+                        "w": w_val,
+                        "bl": bl,
+                        "question_idx": q
+                    })
             question_points_list.append(questions)
             # Toplamı kontrol et
             if abs(running_sum - 100.0) > 1e-6:
@@ -554,8 +557,10 @@ def student_grades():
                             rec for rec in question_points_nested[exam_idx]
                             if rec['clo'] == clo_idx and rec.get('question_idx', q_idx_in_exam) == q_idx_in_exam
                         ]
+                        
                         if q_clo_records:
                             rec = q_clo_records[0]
+                            
                             # SPM değerini otomatik hesapla
                             spm_val = 0.0
                             if 'students' in session and session['students']:
@@ -583,11 +588,16 @@ def student_grades():
                                 if global_q_idx_counter < len(question_performance_medians):
                                     spm_val = question_performance_medians[global_q_idx_counter]
                             
+                            # QCT ve W değerlerini doğru şekilde al
+                            qct_val = rec.get('qct', 0.0)
+                            w_val = rec.get('w', 0.0)
+                            bl_val = rec.get('bl', 0.0)
+                            
                             clo_row[global_q_idx_counter] = {
-                                'qct': rec.get('qct', 0.0),
-                                'w': rec.get('w', 0.0),
+                                'qct': qct_val,
+                                'w': w_val,
                                 'spm': spm_val,
-                                'bl': rec.get('bl', 0.0),
+                                'bl': bl_val,
                             }
                         else:
                             clo_row[global_q_idx_counter] = {
@@ -607,20 +617,55 @@ def student_grades():
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
-                    qct = clo_q_data[clo_idx-1][global_q_idx]['qct']
-                    w = clo_q_data[clo_idx-1][global_q_idx]['w']
-                    spm = clo_q_data[clo_idx-1][global_q_idx]['spm']
-                    bl = clo_q_data[clo_idx-1][global_q_idx]['bl']
-                    qct_list.append(qct)
-                    w_list.append(w)
-                    spm_list.append(spm)
-                    bl_list.append(bl)
+                    
+                    # Bu CLO için bu sorunun verilerini question_points'den al
+                    q_clo_records = [
+                        rec for rec in question_points_nested[exam_idx]
+                        if rec['clo'] == clo_idx and rec.get('question_idx', q) == q
+                    ]
+                    
+                    if q_clo_records:
+                        rec = q_clo_records[0]
+                        qct = rec.get('qct', 0.0)
+                        w = rec.get('w', 0.0)
+                        bl = rec.get('bl', 0.0)
+                        
+                        # SPM değerini hesapla
+                        spm = 0.0
+                        if 'students' in session and session['students']:
+                            students = session['students']
+                            grades_for_question = []
+                            for student in students:
+                                if (global_q_idx < len(student['grades']) and 
+                                    student['grades'][global_q_idx] not in [0, 0.0, '', None]):
+                                    grades_for_question.append(student['grades'][global_q_idx])
+                            
+                            if grades_for_question:
+                                max_points = rec.get('points', 0)
+                                if max_points > 0:
+                                    median_val = np.median(grades_for_question)
+                                    spm = round((median_val / max_points) * 100, 2)
+                        
+                        # Sadece bu CLO'ya ait olan soruları ekle
+                        if qct > 0 and w > 0:
+                            qct_list.append(qct)
+                            w_list.append(w)
+                            spm_list.append(spm)
+                            bl_list.append(bl)
+            
+            # CLO Score hesaplamaları
+            max_clo = max_possible_clo_score(qct_list, w_list)
+            weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
+            avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
+            
             clo_results.append({
-                "max_clo_score": max_possible_clo_score(qct_list, w_list),
-                "weighted_clo_score": weighted_clo_score(qct_list, w_list, spm_list),
-                "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list),
-                "weighted_bloom_score": weighted_bloom_score(qct_list, w_list, bl_list),
-                "average_bloom_score": average_bloom_score(qct_list, w_list, bl_list)
+                "max_clo_score": max_clo,
+                "weighted_clo_score": weighted_clo,
+                "normalized_clo_score": normalized_clo,
+                "weighted_bloom_score": weighted_bloom,
+                "average_bloom_score": avg_bloom
             })
         
         total_clo_results = {
@@ -687,10 +732,12 @@ def bloom_mapping():
             global_q_idx_counter = 0
             for exam_idx, exam in enumerate(exams):
                 for q_idx_in_exam in range(int(exam['question_count'])):
+                    # Bu CLO için bu sorunun verilerini bul
                     q_clo_records = [
                         rec for rec in question_points_nested[exam_idx]
                         if rec['clo'] == clo_idx and rec.get('question_idx', q_idx_in_exam) == q_idx_in_exam
                     ]
+                    
                     if q_clo_records:
                         rec = q_clo_records[0]
                         # SPM değerini otomatik hesapla
@@ -720,13 +767,19 @@ def bloom_mapping():
                             if global_q_idx_counter < len(question_performance_medians):
                                 spm_val = question_performance_medians[global_q_idx_counter]
                         
+                        # QCT ve W değerlerini doğru şekilde al
+                        qct_val = rec.get('qct', 0.0)
+                        w_val = rec.get('w', 0.0)
+                        bl_val = rec.get('bl', 0.0)
+                        
                         clo_row[global_q_idx_counter] = {
-                            'qct': rec.get('qct', 0.0),
-                            'w': rec.get('w', 0.0),
+                            'qct': qct_val,
+                            'w': w_val,
                             'spm': spm_val,
-                            'bl': rec.get('bl', 0.0),
+                            'bl': bl_val,
                         }
                     else:
+                        # Bu CLO için bu soru yok, 0 değerleri ata
                         clo_row[global_q_idx_counter] = {
                             'qct': 0.0,
                             'w': 0.0,
@@ -743,20 +796,55 @@ def bloom_mapping():
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
-                    qct = clo_q_data[clo_idx-1][global_q_idx]['qct']
-                    w = clo_q_data[clo_idx-1][global_q_idx]['w']
-                    spm = clo_q_data[clo_idx-1][global_q_idx]['spm']
-                    bl = clo_q_data[clo_idx-1][global_q_idx]['bl']
-                    qct_list.append(qct)
-                    w_list.append(w)
-                    spm_list.append(spm)
-                    bl_list.append(bl)
+                    
+                    # Bu CLO için bu sorunun verilerini question_points'den al
+                    q_clo_records = [
+                        rec for rec in question_points_nested[exam_idx]
+                        if rec['clo'] == clo_idx and rec.get('question_idx', q) == q
+                    ]
+                    
+                    if q_clo_records:
+                        rec = q_clo_records[0]
+                        qct = rec.get('qct', 0.0)
+                        w = rec.get('w', 0.0)
+                        bl = rec.get('bl', 0.0)
+                        
+                        # SPM değerini hesapla
+                        spm = 0.0
+                        if 'students' in session and session['students']:
+                            students = session['students']
+                            grades_for_question = []
+                            for student in students:
+                                if (global_q_idx < len(student['grades']) and 
+                                    student['grades'][global_q_idx] not in [0, 0.0, '', None]):
+                                    grades_for_question.append(student['grades'][global_q_idx])
+                            
+                            if grades_for_question:
+                                max_points = rec.get('points', 0)
+                                if max_points > 0:
+                                    median_val = np.median(grades_for_question)
+                                    spm = round((median_val / max_points) * 100, 2)
+                        
+                        # Sadece bu CLO'ya ait olan soruları ekle
+                        if qct > 0 and w > 0:
+                            qct_list.append(qct)
+                            w_list.append(w)
+                            spm_list.append(spm)
+                            bl_list.append(bl)
+            
+            # CLO Score hesaplamaları
+            max_clo = max_possible_clo_score(qct_list, w_list)
+            weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
+            avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
+            
             clo_results.append({
-                "max_clo_score": max_possible_clo_score(qct_list, w_list),
-                "weighted_clo_score": weighted_clo_score(qct_list, w_list, spm_list),
-                "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list),
-                "weighted_bloom_score": weighted_bloom_score(qct_list, w_list, bl_list),
-                "average_bloom_score": average_bloom_score(qct_list, w_list, bl_list)
+                "max_clo_score": max_clo,
+                "weighted_clo_score": weighted_clo,
+                "normalized_clo_score": normalized_clo,
+                "weighted_bloom_score": weighted_bloom,
+                "average_bloom_score": avg_bloom
             })
         
         total_clo_results = {
@@ -775,7 +863,7 @@ def bloom_mapping():
     return render_template(
         "bloom_mapping.html",
         exams=exams,
-        clos=list(range(1, clo_count+1)),
+        clos=list(range(clo_count)),  # 0'dan başlayarak clo_count-1'e kadar
         clo_names=clo_names,
         clo_results=clo_results,
         enumerate=enumerate,
@@ -1008,9 +1096,10 @@ def download_clo_analysis_csv():
     # CLO Analysis Results tablosu için veri hazırla
     analysis_data = []
     for clo_idx in range(len(clo_results)):
-        normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results[clo_idx]['max_clo_score'] > 0 else 0
+        # Normalized CLO değerini doğrudan clo_results'dan al
+        normalized_clo = clo_results[clo_idx].get('normalized_clo_score', 0)
         # Average Bloom Level-CLO hesaplaması düzeltildi
-        avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results[clo_idx]['average_bloom_score'] > 0 else 0
+        avg_bloom_level = clo_results[clo_idx].get('average_bloom_score', 0)
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
@@ -1142,8 +1231,9 @@ def download_all_tables():
     # 3. CLO Analiz Sonuçları
     clo_analysis_data = []
     for clo_idx in range(len(clo_results)):
-        normalized_clo = ((clo_results[clo_idx]['weighted_clo_score'] / clo_results[clo_idx]['max_clo_score']) * 100) if clo_results[clo_idx]['max_clo_score'] > 0 else 0
-        avg_bloom_level = clo_results[clo_idx]['average_bloom_score'] if clo_results[clo_idx]['average_bloom_score'] > 0 else 0
+        # Normalized CLO değerini doğrudan clo_results'dan al
+        normalized_clo = clo_results[clo_idx].get('normalized_clo_score', 0)
+        avg_bloom_level = clo_results[clo_idx].get('average_bloom_score', 0)
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
@@ -1222,23 +1312,59 @@ def download_all_tables():
 
 # CALCULATION FUNCTIONS
 def max_possible_clo_score(qct_list, w_list):
+    """Maksimum mümkün CLO skoru hesapla"""
+    if not qct_list or not w_list or len(qct_list) != len(w_list):
+        return 0
     return sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
 
 def weighted_clo_score(qct_list, w_list, spm_list):
+    """Ağırlıklı CLO skoru hesapla"""
+    if not qct_list or not w_list or not spm_list or len(qct_list) != len(w_list) or len(w_list) != len(spm_list):
+        return 0
     return sum((qct / 100) * w * (spm / 100) for qct, w, spm in zip(qct_list, w_list, spm_list))
 
 def normalized_clo_score(qct_list, w_list, spm_list):
-    numerator = sum((qct / 100) * w * spm for qct, w, spm in zip(qct_list, w_list, spm_list))
-    denominator = sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
-    return numerator / denominator if denominator != 0 else 0
+    """Normalize edilmiş CLO skoru hesapla - yüzde olarak"""
+    if not qct_list or not w_list or not spm_list or len(qct_list) != len(w_list) or len(w_list) != len(spm_list):
+        return 0
+    
+    # Sadece pozitif değerleri olan soruları al
+    valid_data = [(qct, w, spm) for qct, w, spm in zip(qct_list, w_list, spm_list) if qct > 0 and w > 0]
+    
+    if not valid_data:
+        return 0
+    
+    # Normalized CLO Score = (Weighted CLO Score / Max Possible CLO Score) * 100
+    weighted_score = sum((qct / 100) * w * (spm / 100) for qct, w, spm in valid_data)
+    max_score = sum((qct / 100) * w for qct, w, _ in valid_data)
+    
+    if max_score > 0:
+        return (weighted_score / max_score) * 100
+    return 0
 
 def weighted_bloom_score(qct_list, w_list, bl_list):
+    """Ağırlıklı Bloom skoru hesapla"""
+    if not qct_list or not w_list or not bl_list or len(qct_list) != len(w_list) or len(w_list) != len(bl_list):
+        return 0
     return sum((qct / 100) * w * bl for qct, w, bl in zip(qct_list, w_list, bl_list))
 
 def average_bloom_score(qct_list, w_list, bl_list):
-    # Weighted BL Sum ÷ MW-BL hesaplaması
-    weighted_bloom_sum = sum((qct / 100) * w * bl for qct, w, bl in zip(qct_list, w_list, bl_list))
-    mw_bl = sum((qct / 100) * w for qct, w in zip(qct_list, w_list))
+    """Ortalama Bloom seviyesi hesapla - Weighted BL Sum / MW-BL"""
+    if not qct_list or not w_list or not bl_list or len(qct_list) != len(w_list) or len(w_list) != len(bl_list):
+        return 0
+    
+    # Sadece pozitif değerleri olan soruları al
+    valid_data = [(qct, w, bl) for qct, w, bl in zip(qct_list, w_list, bl_list) if qct > 0 and w > 0]
+    
+    if not valid_data:
+        return 0
+    
+    # Average Bloom Score = Weighted BL Sum / MW-BL
+    # Weighted BL Sum = Σ(QCTᵢ/100 × Wᵢ × BLᵢ)
+    # MW-BL = Σ(QCTᵢ/100 × Wᵢ)
+    weighted_bloom_sum = sum((qct / 100) * w * bl for qct, w, bl in valid_data)
+    mw_bl = sum((qct / 100) * w for qct, w, _ in valid_data)
+    
     return weighted_bloom_sum / mw_bl if mw_bl > 0 else 0
 
 # AJAX Save Routes

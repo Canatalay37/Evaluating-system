@@ -11,64 +11,18 @@
             box-sizing: border-box;
         }
 
-        /* Performance optimizations */
-        body {
-            will-change: auto;
-        }
-
-        .exam-section {
-            will-change: auto;
-        }
-
-        .question-card {
-            will-change: auto;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow-x: hidden;
         }
 
-        /* Animated background elements (optimized) */
-        body::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: float 30s linear infinite;
-            z-index: 1;
-            will-change: transform;
-        }
-
-        @keyframes float {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* Disable background animation on low-end devices */
-        @media (prefers-reduced-motion: reduce) {
-            body::before {
-                animation: none;
-            }
-        }
-
-        /* Header */
         .header {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(5px);
             padding: 1.5rem 2rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 10;
             border-bottom: 3px solid #764ba2;
         }
 
@@ -83,31 +37,18 @@
         .logo {
             height: 80px;
             width: auto;
-            border-radius: 0;
-            box-shadow: none;
-            transition: transform 0.3s ease;
         }
 
-        .logo:hover {
-            transform: scale(1.05) rotate(5deg);
-        }
-
-        .header-text {
-            flex: 1;
-        }
-
-        .header-title {
+        .header-text h1 {
             font-size: 2rem;
             font-weight: 700;
             color: #2c3e50;
             margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
-        .header-subtitle {
+        .header-text p {
             font-size: 1.1rem;
             color: #7f8c8d;
-            font-weight: 500;
         }
 
         .course-info {
@@ -116,14 +57,11 @@
             border-radius: 10px;
             padding: 15px;
             margin-top: 15px;
-            backdrop-filter: blur(5px);
         }
 
         .course-info h3 {
             color: #667eea;
-            font-size: 1.1rem;
             margin-bottom: 10px;
-            font-weight: 600;
         }
 
         .course-info-grid {
@@ -132,30 +70,9 @@
             gap: 10px;
         }
 
-        .course-info-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .course-info-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-            font-weight: 500;
-            margin-bottom: 2px;
-        }
-
-        .course-info-value {
-            font-size: 1rem;
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        /* Main Content */
         .main-container {
             flex: 1;
             padding: 2rem;
-            position: relative;
-            z-index: 5;
         }
 
         .content-wrapper {
@@ -165,28 +82,9 @@
 
         .card {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
             padding: 2rem;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 2rem;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-
-        .card-header {
-            text-align: center;
             margin-bottom: 2rem;
         }
 
@@ -194,7 +92,8 @@
             font-size: 1.8rem;
             font-weight: 700;
             color: #2c3e50;
-            margin-bottom: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
         }
 
         .info-section {
@@ -204,9 +103,7 @@
             padding: 15px;
             margin-bottom: 20px;
             text-align: center;
-            font-size: 14px;
             color: #0c5460;
-            backdrop-filter: blur(5px);
         }
 
         .exam-section {
@@ -215,14 +112,12 @@
             margin: 20px 0;
             border-radius: 15px;
             border: 1px solid rgba(223, 230, 237, 0.6);
-            backdrop-filter: blur(5px);
         }
 
         .exam-section h3 {
             color: #2c3e50;
             margin-bottom: 20px;
             font-size: 1.4rem;
-            font-weight: 600;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
         }
@@ -237,23 +132,14 @@
             border: 1px solid #e0e6ed;
             border-radius: 12px;
             padding: 15px;
-            margin-bottom: 10px;
             background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(5px);
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .question-card:hover {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-            transition: all 0.3s ease;
         }
 
         .question-card h4 {
             color: #2980b9;
             margin-bottom: 15px;
             font-size: 1.1rem;
-            font-weight: 600;
         }
 
         input[type="number"] {
@@ -263,14 +149,11 @@
             border-radius: 8px;
             width: 100px;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
-            background: rgba(248, 249, 250, 0.8);
         }
 
         input[type="number"]:focus {
             outline: none;
             border-color: #667eea;
-            background: white;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
@@ -288,7 +171,6 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 8px;
-            align-items: center;
         }
 
         .clo-option {
@@ -300,12 +182,6 @@
             padding: 6px 10px;
             border-radius: 8px;
             font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .clo-option:hover {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: #667eea;
         }
 
         .clo-option input[type="checkbox"] {
@@ -322,13 +198,11 @@
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-top: 2rem;
-            position: relative;
-            overflow: hidden;
             width: 100%;
+            transition: all 0.3s ease;
         }
 
         .submit-btn:disabled {
@@ -337,22 +211,7 @@
             opacity: 0.6;
         }
 
-        .submit-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .submit-btn:hover::before {
-            left: 100%;
-        }
-
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
@@ -364,16 +223,13 @@
             padding: 10px 15px;
             border-radius: 8px;
             border-left: 4px solid #ffc107;
-            backdrop-filter: blur(5px);
         }
 
-        /* Bloom Level Table */
         .bloom-table-container {
             margin-top: 40px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             padding: 20px;
-            backdrop-filter: blur(8px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
@@ -382,7 +238,6 @@
             color: #2c3e50;
             margin-bottom: 20px;
             font-size: 1.3rem;
-            font-weight: 600;
         }
 
         table {
@@ -391,7 +246,6 @@
             text-align: center;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         table th, table td {
@@ -403,69 +257,32 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             font-weight: bold;
-            font-size: 1rem;
         }
 
         table tr:nth-child(even) {
             background-color: rgba(248, 249, 250, 0.8);
         }
 
-        table tr:hover {
-            background-color: rgba(102, 126, 234, 0.1);
-        }
-
-        /* Footer */
         .footer {
             background: rgba(44, 62, 80, 0.9);
             color: white;
             text-align: center;
             padding: 1.5rem;
-            backdrop-filter: blur(5px);
-            position: relative;
-            z-index: 10;
         }
 
-        .footer-text {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        /* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
                 text-align: center;
-                gap: 15px;
-            }
-
-            .header-title {
-                font-size: 1.5rem;
             }
 
             .question-grid {
                 grid-template-columns: 1fr;
             }
 
-            .clo-grid {
-                grid-template-columns: 1fr;
-            }
-
             .card {
                 padding: 1.5rem;
                 margin: 1rem;
-            }
-        }
-
-        /* Animation for sections (optimized) */
-        .exam-section {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Disable animations on low-end devices */
-        @media (prefers-reduced-motion: reduce) {
-            .exam-section {
-                animation: none;
             }
         }
     </style>
@@ -476,24 +293,21 @@
         <div class="header-content">
             <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
             <div class="header-text">
-                <h1 class="header-title">Exam Evaluation System</h1>
-                <p class="header-subtitle">Faculty of Civil and Environmental Engineering</p>
+                <h1>Exam Evaluation System</h1>
+                <p>Faculty of Civil and Environmental Engineering</p>
                 
                 <!-- Course Information Display -->
                 <div class="course-info">
                     <h3>📚 Course Information</h3>
                     <div class="course-info-grid">
-                        <div class="course-info-item">
-                            <span class="course-info-label">Course Code:</span>
-                            <span class="course-info-value">{{ session.get('course_code', 'N/A') }}</span>
+                        <div>
+                            <strong>Course Code:</strong> {{ session.get('course_code', 'N/A') }}
                         </div>
-                        <div class="course-info-item">
-                            <span class="course-info-label">Teacher:</span>
-                            <span class="course-info-value">{{ session.get('teacher_name', 'N/A') }}</span>
+                        <div>
+                            <strong>Teacher:</strong> {{ session.get('teacher_name', 'N/A') }}
                         </div>
-                        <div class="course-info-item">
-                            <span class="course-info-label">Semester:</span>
-                            <span class="course-info-value">{{ session.get('semester', 'N/A') }}</span>
+                        <div>
+                            <strong>Semester:</strong> {{ session.get('semester', 'N/A') }}
                         </div>
                     </div>
                 </div>
@@ -505,9 +319,7 @@
     <div class="main-container">
         <div class="content-wrapper">
             <div class="card">
-                <div class="card-header">
                     <h2 class="card-title">Question Points Configuration</h2>
-                </div>
 
                 {% if students_per_exam %}
                     <div class="info-section">
@@ -538,18 +350,14 @@
                                             <div class="clo-grid">
                                                 {% for idx in range(clo_count) %}
                                                     <label class="clo-option">
-                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}" id="clo_{{exam_idx}}_{{q}}_{{idx}}">
+                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
                                                         <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
                                                     </label>
                                                 {% endfor %}
                                             </div>
                                         </div>
 
-                                        <div style="display: flex; gap: 10px; margin-top: 10px;">
-                                            <label>QCT (%):
-                                                <input type="number" name="qct_{{exam_idx}}_{{q}}" min="0" max="100" step="0.01" required 
-                                                       onchange="validateQCT(this)" oninput="validateQCT(this)">
-                                            </label>
+                                        <div style="margin-top: 10px;">
                                             <label>BL:
                                                 <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required
                                                        onchange="validateBL(this)" oninput="validateBL(this)">
@@ -562,8 +370,6 @@
                             <div class="warning-text">
                                 <strong>⚠️ Important:</strong> Total points for {{ exam['name'] }} must equal 100.
                             </div>
-                            <div class="points-total-display" style="display: none;"></div>
-                            <div class="validation-summary" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none; font-size: 0.9rem;"></div>
                         </div>
                     {% endfor %}
                     
@@ -629,83 +435,125 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p class="footer-text">© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
+        <p>© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
     </footer>
 
     <script>
-        // Form validation to ensure total points equal 100 for each exam
-        document.getElementById('qpForm').addEventListener('submit', function(e) {
-            // Make sure 'exams' is available as a JS variable
-            var exams;
-            try {
-                exams = JSON.parse('{{ exams | tojson | safe }}');
-            } catch (err) {
-                console.error('Error parsing exams data:', err);
+        // Basit ve çalışan JavaScript kodu
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Sayfa yüklendi, JavaScript çalışıyor...');
+            
+            // Submit butonunu bul
+            const submitBtn = document.querySelector('.submit-btn');
+            if (!submitBtn) {
+                console.error('Submit butonu bulunamadı!');
                 return;
             }
             
-            var isValid = true;
-            var errorMessage = '';
+            // Exams verisini al
+            let exams;
+            try {
+                exams = JSON.parse('{{ exams | tojson | safe }}');
+                console.log('Exams verisi:', exams);
+            } catch (err) {
+                console.error('Exams verisi parse edilemedi:', err);
+                return;
+            }
+            
+            // Form validation fonksiyonu
+            function checkFormValidity() {
+                let allValid = true;
 
-            if (!Array.isArray(exams)) {
-                isValid = false;
-                errorMessage = "Exam data is not available or is invalid.";
-            } else {
                 exams.forEach(function(exam, examIdx) {
                     let totalPoints = 0;
-                    let cloSelectionStatus = [];
+                    let cloValid = true;
+                    let blValid = true;
                     
                     for (let q = 0; q < exam.question_count; q++) {
+                        // Points kontrolü
                         const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
                         if (pointsInput && pointsInput.value) {
                             totalPoints += parseFloat(pointsInput.value);
                         }
                         
-                        // CLO seçimi kontrolü
+                        // CLO kontrolü
                         const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
-                        cloSelectionStatus.push(cloCheckboxes.length > 0);
-                        
-                        // QCT ve BL değerlerini kontrol et
-                        const qctInput = document.querySelector(`input[name="qct_${examIdx}_${q}"]`);
-                        const blInput = document.querySelector(`input[name="bl_${examIdx}_${q}"]`);
-                        
-                        if (qctInput && qctInput.value) {
-                            const qct = parseFloat(qctInput.value);
-                            if (qct < 0 || qct > 100) {
-                                isValid = false;
-                                errorMessage += `${exam.name} Question ${q+1} QCT value must be between 0 and 100.\n`;
-                            }
+                        if (cloCheckboxes.length === 0) {
+                            cloValid = false;
                         }
                         
-                        if (blInput && blInput.value) {
+                        // BL kontrolü
+                        const blInput = document.querySelector(`input[name="bl_${examIdx}_${q}"]`);
+                        if (!blInput || !blInput.value) {
+                            blValid = false;
+                        } else {
                             const bl = parseFloat(blInput.value);
                             if (bl < 1 || bl > 6) {
-                                isValid = false;
-                                errorMessage += `${exam.name} Question ${q+1} Bloom Level must be between 1 and 6.\n`;
+                                blValid = false;
                             }
                         }
                     }
 
+                    // Toplam puan kontrolü
                     if (Math.abs(totalPoints - 100) > 0.01) {
-                        isValid = false;
-                        errorMessage += `${exam.name} total points: ${totalPoints.toFixed(2)}. Must equal 100.\n`;
+                        allValid = false;
+                        console.log(`${exam.name} için toplam puan: ${totalPoints}, 100 olmalı`);
                     }
                     
-                    if (cloSelectionStatus.some(status => !status)) {
-                        isValid = false;
-                        errorMessage += `${exam.name} has questions without CLO selections. Please select at least one CLO for each question.\n`;
+                    if (!cloValid) {
+                        allValid = false;
+                        console.log(`${exam.name} için CLO seçimi eksik`);
+                    }
+                    
+                    if (!blValid) {
+                        allValid = false;
+                        console.log(`${exam.name} için BL değeri eksik veya geçersiz`);
                     }
                 });
+                
+                return allValid;
             }
-
-            if (!isValid) {
+            
+            // Submit butonunu güncelle
+            function updateSubmitButton() {
+                const isValid = checkFormValidity();
+                submitBtn.disabled = !isValid;
+                console.log('Submit butonu durumu:', isValid ? 'aktif' : 'pasif');
+                
+                if (isValid) {
+                    submitBtn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                    submitBtn.style.cursor = 'pointer';
+                } else {
+                    submitBtn.style.background = '#6c757d';
+                    submitBtn.style.cursor = 'not-allowed';
+                }
+            }
+            
+            // Event listener'ları ekle
+            document.querySelectorAll('input[name^="points_"], input[name^="bl_"]').forEach(input => {
+                input.addEventListener('input', updateSubmitButton);
+                input.addEventListener('change', updateSubmitButton);
+            });
+            
+            document.querySelectorAll('input[name^="clo_"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSubmitButton);
+            });
+            
+            // İlk kontrolü yap
+            updateSubmitButton();
+            
+            // Form submit kontrolü
+            document.getElementById('qpForm').addEventListener('submit', function(e) {
+                if (!checkFormValidity()) {
                 e.preventDefault();
-                alert('Error:\n' + errorMessage);
-                return;
+                    alert('Lütfen tüm alanları doğru şekilde doldurun:\n- Her sınav için toplam puan 100 olmalı\n- Her soru için CLO seçilmeli\n- Her soru için BL değeri (1-6) girilmeli');
+                    return false;
             }
+                console.log('Form gönderiliyor...');
+            });
         });
 
-        // Function to validate points input
+        // Input validation fonksiyonları
         function validatePoints(input) {
             const value = parseFloat(input.value);
             if (value < 0 || value > 100) {
@@ -717,19 +565,6 @@
             }
         }
 
-        // Function to validate QCT input
-        function validateQCT(input) {
-            const value = parseFloat(input.value);
-            if (value < 0 || value > 100) {
-                input.style.borderColor = '#dc3545';
-                input.style.backgroundColor = '#f8d7da';
-            } else {
-                input.style.borderColor = '#28a745';
-                input.style.backgroundColor = '#d4edda';
-            }
-        }
-
-        // Function to validate BL input
         function validateBL(input) {
             const value = parseFloat(input.value);
             if (value < 1 || value > 6) {
@@ -740,184 +575,6 @@
                 input.style.backgroundColor = '#d4edda';
             }
         }
-
-        // Debounce function to limit function calls
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Function to update points total display (optimized)
-        function updatePointsTotal() {
-            try {
-                var exams = JSON.parse('{{ exams | tojson | safe }}');
-                if (!Array.isArray(exams)) return;
-                
-                // Batch DOM updates
-                const updates = [];
-                
-                exams.forEach(function(exam, examIdx) {
-                    let totalPoints = 0;
-                    let cloSelectionStatus = [];
-                    
-                    for (let q = 0; q < exam.question_count; q++) {
-                        const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
-                        if (pointsInput && pointsInput.value) {
-                            totalPoints += parseFloat(pointsInput.value);
-                        }
-                        
-                        const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
-                        cloSelectionStatus.push(cloCheckboxes.length > 0);
-                    }
-                    
-                    const pointsValid = Math.abs(totalPoints - 100) < 0.01;
-                    const cloValid = cloSelectionStatus.every(status => status);
-                    const overallValid = pointsValid && cloValid;
-                    
-                    updates.push({
-                        examIdx,
-                        totalPoints,
-                        pointsValid,
-                        cloValid,
-                        overallValid
-                    });
-                });
-                
-                // Apply all updates at once
-                requestAnimationFrame(() => {
-                    updates.forEach(update => {
-                        const examSection = document.querySelector(`.exam-section:nth-of-type(${update.examIdx + 1})`);
-                        if (examSection) {
-                            // Update total display
-                            let totalDisplay = examSection.querySelector('.points-total-display');
-                            if (!totalDisplay) {
-                                totalDisplay = document.createElement('div');
-                                totalDisplay.className = 'points-total-display';
-                                examSection.appendChild(totalDisplay);
-                            }
-                            
-                            totalDisplay.style.cssText = `
-                                background: ${update.overallValid ? '#d4edda' : '#f8d7da'};
-                                border: 1px solid ${update.overallValid ? '#c3e6cb' : '#f5c6cb'};
-                                color: ${update.overallValid ? '#155724' : '#721c24'};
-                                padding: 10px;
-                                border-radius: 8px;
-                                margin-top: 15px;
-                                text-align: center;
-                                font-weight: bold;
-                                font-size: 0.9rem;
-                            `;
-                            
-                            let statusText = `Total Points: ${update.totalPoints.toFixed(2)} / 100 ${update.pointsValid ? '✓' : '⚠️'}`;
-                            if (!update.cloValid) {
-                                statusText += ' | CLO Selection: ⚠️';
-                            } else {
-                                statusText += ' | CLO Selection: ✓';
-                            }
-                            
-                            totalDisplay.innerHTML = statusText;
-                            totalDisplay.style.display = 'block';
-                        }
-                    });
-                    
-                    // Update submit button state
-                    updateSubmitButtonState();
-                });
-            } catch (err) {
-                console.error('Error updating points total:', err);
-            }
-        }
-
-        // Function to update submit button state
-        function updateSubmitButtonState() {
-            try {
-                var exams = JSON.parse('{{ exams | tojson | safe }}');
-                if (!Array.isArray(exams)) return;
-                
-                let allValid = true;
-                
-                exams.forEach(function(exam, examIdx) {
-                    let totalPoints = 0;
-                    let cloSelectionStatus = [];
-                    
-                    for (let q = 0; q < exam.question_count; q++) {
-                        const pointsInput = document.querySelector(`input[name="points_${examIdx}_${q}"]`);
-                        if (pointsInput && pointsInput.value) {
-                            totalPoints += parseFloat(pointsInput.value);
-                        }
-                        
-                        const cloCheckboxes = document.querySelectorAll(`input[name="clo_${examIdx}_${q}"]:checked`);
-                        cloSelectionStatus.push(cloCheckboxes.length > 0);
-                        
-                        const qctInput = document.querySelector(`input[name="qct_${examIdx}_${q}"]`);
-                        const blInput = document.querySelector(`input[name="bl_${examIdx}_${q}"]`);
-                        
-                        if (qctInput && qctInput.value) {
-                            const qct = parseFloat(qctInput.value);
-                            if (qct < 0 || qct > 100) {
-                                allValid = false;
-                            }
-                        }
-                        
-                        if (blInput && blInput.value) {
-                            const bl = parseFloat(blInput.value);
-                            if (bl < 1 || bl > 6) {
-                                allValid = false;
-                            }
-                        }
-                    }
-                    
-                    if (Math.abs(totalPoints - 100) > 0.01 || cloSelectionStatus.some(status => !status)) {
-                        allValid = false;
-                    }
-                });
-                
-                const submitBtn = document.querySelector('.submit-btn');
-                if (submitBtn) {
-                    submitBtn.disabled = !allValid;
-                }
-            } catch (err) {
-                console.error('Error updating submit button state:', err);
-            }
-        }
-
-        // Add event listeners to all point inputs and CLO checkboxes
-        document.addEventListener('DOMContentLoaded', function() {
-            // Debounced version of updatePointsTotal for better performance
-            const debouncedUpdate = debounce(updatePointsTotal, 150);
-            
-            // Add event listeners to point inputs
-            document.querySelectorAll('input[name^="points_"]').forEach(input => {
-                input.addEventListener('input', debouncedUpdate);
-                input.addEventListener('change', updatePointsTotal);
-            });
-
-            // Add event listeners to CLO checkboxes
-            document.querySelectorAll('input[name^="clo_"]').forEach(checkbox => {
-                checkbox.addEventListener('change', updatePointsTotal);
-            });
-
-            // Add event listeners to QCT and BL inputs
-            document.querySelectorAll('input[name^="qct_"]').forEach(input => {
-                input.addEventListener('input', debouncedUpdate);
-                input.addEventListener('change', updatePointsTotal);
-            });
-
-            document.querySelectorAll('input[name^="bl_"]').forEach(input => {
-                input.addEventListener('input', debouncedUpdate);
-                input.addEventListener('change', updatePointsTotal);
-            });
-
-            // Initial calculation
-            updatePointsTotal();
-            
-            // Initial submit button state
-            updateSubmitButtonState();
-        });
+    </script>
+</body>
+</html>

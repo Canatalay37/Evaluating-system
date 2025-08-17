@@ -287,10 +287,11 @@ input[readonly] {
         <span class="close">&times;</span>
         <h2>Bloom Level Mapping</h2>
         
-        <!-- SPM Otomatik Hesaplama Bilgisi -->
+        <!-- Otomatik Hesaplama Bilgisi -->
         <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
-            <strong>ℹ️ Bilgi:</strong> SPM (Student Performance Median) değerleri otomatik olarak hesaplanıp girilir. 
-            Öğrenci notları değiştiğinde bu değerler güncellenir.
+            <strong>ℹ️ Bilgi:</strong> Tüm değerler (QCT, W, SPM, BL) otomatik olarak hesaplanıp girilir. 
+            QCT: (Soru puanı × Sınav yüzdesi) ÷ 100 | W: 1 ÷ CLO sayısı | SPM: Öğrenci performans medyanı | BL: Bloom seviyesi
+            <br><strong>⚠️ Önemli:</strong> Bu alanlar otomatik hesaplanır ve değiştirilemez!
         </div>
 
         <form method="post" id="bloomForm">
@@ -368,7 +369,8 @@ input[readonly] {
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" max="100" 
                                        name="qct_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['qct'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['qct'] }}{% endif %}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['qct'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['qct'] }}{% endif %}"
+                                       readonly style="background-color: #f8f9fa; color: #495057; font-weight: bold;">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -378,7 +380,8 @@ input[readonly] {
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" 
                                        name="w_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['w'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['w'] }}{% endif %}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['w'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['w'] }}{% endif %}"
+                                       readonly style="background-color: #f8f9fa; color: #495057; font-weight: bold;">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -388,7 +391,8 @@ input[readonly] {
                                 {% endif %}">
                                 <input type="number" step="0.01" min="0" 
                                        name="spm_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['spm'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['spm'] }}{% endif %}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['spm'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['spm'] }}{% endif %}"
+                                       readonly style="background-color: #f8f9fa; color: #495057; font-weight: bold;">
                             </td>
                             <td class="input-cell 
                                 {% if exam.name == 'Midterm' %}midterm-col
@@ -398,16 +402,17 @@ input[readonly] {
                                 {% endif %}">
                                 <input type="number" step="0.1" min="1" max="6" 
                                        name="bl_{{ clo_idx }}_{{ global_q_idx }}" 
-                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['bl'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['bl'] }}{% endif %}">
+                                       value="{% if clo_q_data and clo_idx < clo_q_data|length and global_q_idx in clo_q_data[clo_idx] and clo_q_data[clo_idx][global_q_idx]['bl'] != 0 %}{{ clo_q_data[clo_idx][global_q_idx]['bl'] }}{% endif %}"
+                                       readonly style="background-color: #f8f9fa; color: #495057; font-weight: bold;">
                             </td>
                         {% endfor %}
                     {% endfor %}
                     
                     <!-- Performance Values -->
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['max_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['weighted_clo_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.3f"|format(clo_results[clo_idx]['average_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.000' }}</td>
-                    <td class="calc-cell">{{ "%.2f"|format(clo_results[clo_idx]['weighted_bloom_score']) if clo_results and clo_idx < clo_results|length else '0.00' }}</td>
+                     <td class="calc-cell" id="max_clo_{{ clo_idx }}">0.000</td>
+                     <td class="calc-cell" id="weighted_clo_{{ clo_idx }}">0.000</td>
+                     <td class="calc-cell" id="avg_bloom_{{ clo_idx }}">0.000</td>
+                     <td class="calc-cell" id="weighted_bl_sum_{{ clo_idx }}">0.00</td>
                 </tr>
                 {% endfor %}
                 
@@ -415,10 +420,10 @@ input[readonly] {
                 <tr class="total-row">
                     <td>TOTAL</td>
                     <td colspan="{{ exams|sum(attribute='question_count') * 4 }}"></td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_max_clo_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_weighted_clo_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.3f"|format(total_clo_results['total_average_bloom_score']) if total_clo_results else '0.000' }}</td>
-                    <td>{{ "%.2f"|format(total_clo_results.get('total_weighted_bloom_score', 0)) if total_clo_results else '0.00' }}</td>
+                     <td id="total_max_clo">0.000</td>
+                     <td id="total_weighted_clo">0.000</td>
+                     <td id="total_avg_bloom">0.000</td>
+                     <td id="total_weighted_bl_sum">0.00</td>
                 </tr>
             </table>
         
@@ -777,6 +782,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (saveBtn) {
           saveBtn.click();
         }
+        
+        // Bloom modal açıksa SPM değerlerini güncelle
+        const bloomModal = document.getElementById('bloomModal');
+        if (bloomModal && bloomModal.style.display === 'block') {
+          console.log('Öğrenci notu değişti, SPM güncelleniyor...');
+          setTimeout(autoCalculateBloomMapping, 1000);
+        }
       }, 3000);
     });
   });
@@ -805,6 +817,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open modal
     btn.onclick = function() {
         modal.style.display = 'block';
+        // Modal açıldıktan sonra otomatik hesaplama yap
+        setTimeout(autoCalculateBloomMapping, 300);
     }
 
     // Close modal
@@ -819,19 +833,354 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Auto-submit functionality for bloom form
-    const bloomForm = document.getElementById('bloomForm');
-    if (bloomForm) {
-        let timer = null;
-        function autoSubmit() {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(() => { bloomForm.submit(); }, 600);
+    // Otomatik hesaplama fonksiyonu
+    function autoCalculateBloomMapping() {
+        console.log('Bloom Mapping otomatik hesaplanıyor...');
+        
+        // Exams verisini al
+        let exams;
+        try {
+            exams = JSON.parse('{{ exams | tojson | safe }}');
+            console.log('Exams:', exams);
+        } catch (err) {
+            console.error('Exams verisi parse edilemedi:', err);
+            return;
         }
-        bloomForm.querySelectorAll('input[type="number"]').forEach(inp => {
-            inp.addEventListener('input', autoSubmit);
-            inp.addEventListener('change', autoSubmit);
+
+        // Question points verisini al
+        let questionPoints;
+        try {
+            questionPoints = JSON.parse('{{ question_points_nested | tojson | safe }}');
+            console.log('Question Points:', questionPoints);
+        } catch (err) {
+            console.error('Question points verisi parse edilemedi:', err);
+            return;
+        }
+
+        // Her CLO için hesaplama yap
+        const clos = JSON.parse('{{ clos | tojson | safe }}');
+        const cloNames = JSON.parse('{{ clo_names | tojson | safe }}');
+        console.log('CLOs:', clos);
+        console.log('CLO Names:', cloNames);
+        
+        clos.forEach((clo, cloIdx) => {
+            console.log(`CLO ${cloIdx + 1} hesaplanıyor...`);
+            
+            exams.forEach((exam, examIndex) => {
+                console.log(`Exam ${examIndex}: ${exam.name}`);
+                
+                for (let q = 0; q < exam.question_count; q++) {
+                    const allQuestionsFlatMap = JSON.parse('{{ all_questions_flat_map | tojson | safe }}');
+                    const globalQIdx = allQuestionsFlatMap[examIndex][q];
+                    console.log(`Question ${q+1}, Global Index: ${globalQIdx}`);
+                    
+                    // Bu CLO bu soruya ait mi kontrol et
+                    let isCLOSelected = false;
+                    if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                        const cloList = questionPoints[examIndex][q].clo || [];
+                        isCLOSelected = cloList.includes(clo);
+                        console.log(`CLO ${clo} for Q${q+1}: ${isCLOSelected ? 'SEÇİLDİ' : 'SEÇİLMEDİ'}, CLO List:`, cloList);
+                    }
+                    
+                    // Eğer bu CLO bu soruya ait değilse, alanları boş bırak
+                    if (!isCLOSelected) {
+                        // Input alanlarını güncelle - boş değerler
+                        const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
+                        const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
+                        const spmInput = document.querySelector(`input[name="spm_${cloIdx}_${globalQIdx}"]`);
+                        const blInput = document.querySelector(`input[name="bl_${cloIdx}_${globalQIdx}"]`);
+                        
+                        if (qctInput) {
+                            qctInput.value = '';
+                            qctInput.style.backgroundColor = '#f8f9fa';
+                            qctInput.style.fontWeight = 'normal';
+                        }
+                        if (wInput) {
+                            wInput.value = '';
+                            wInput.style.backgroundColor = '#f8f9fa';
+                            wInput.style.fontWeight = 'normal';
+                        }
+                        if (spmInput) {
+                            spmInput.value = '';
+                            spmInput.style.backgroundColor = '#f8f9fa';
+                            spmInput.style.fontWeight = 'normal';
+                        }
+                        if (blInput) {
+                            blInput.value = '';
+                            blInput.style.backgroundColor = '#f8f9fa';
+                            blInput.style.fontWeight = 'normal';
+                        }
+                        
+                        console.log(`Q${q+1} CLO ${clo}: SEÇİLMEDİ - Alanlar boş bırakıldı`);
+                        continue; // Sonraki iterasyona geç
+                    }
+                    
+                    // Bu CLO bu soruya aitse, değerleri hesapla
+                    // QCT değerini hesapla: (Soru puanı × Sınav yüzdesi) ÷ 100
+                    let qctValue = 0;
+                    if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                        const points = questionPoints[examIndex][q].points || 0;
+                        const weight = exam.weight || 0;
+                        qctValue = (points * weight) / 100;
+                        console.log(`QCT: ${points} × ${weight} ÷ 100 = ${qctValue}`);
+                    }
+                    
+                    // W değerini hesapla: 1 / CLO sayısı (eğer bu soru bu CLO'ya aitse)
+                    let wValue = 0;
+                    if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                        const cloList = questionPoints[examIndex][q].clo || [];
+                        wValue = 1.0 / cloList.length;
+                        console.log(`W: 1 ÷ ${cloList.length} = ${wValue}`);
+                    }
+                    
+                    // SPM değerini hesapla: Öğrenci performans medyanı
+                    let spmValue = 0;
+                    
+                    // Öğrenci notlarını doğrudan DOM'dan al
+                    const gradesForQuestion = [];
+                    
+                    // Tüm öğrenci notlarını topla
+                    for (let studentIdx = 0; studentIdx < studentCount; studentIdx++) {
+                        const gradeInput = document.querySelector(`input[name="grade_${studentIdx}_${globalQIdx}"]`);
+                        if (gradeInput && gradeInput.value.trim() !== '') {
+                            const gradeValue = parseFloat(gradeInput.value.trim());
+                            if (!isNaN(gradeValue) && gradeValue >= 0) {
+                                gradesForQuestion.push(gradeValue);
+                            }
+                        }
+                    }
+                    
+                    if (gradesForQuestion.length > 0) {
+                        // Max points'i bul
+                        let maxPoints = 0;
+                        if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                            maxPoints = questionPoints[examIndex][q].points || 0;
+                        }
+                        
+                        if (maxPoints > 0) {
+                            // Medyan hesapla
+                            const sortedGrades = [...gradesForQuestion].sort((a, b) => a - b);
+                            let median;
+                            if (sortedGrades.length % 2 === 0) {
+                                median = (sortedGrades[sortedGrades.length / 2 - 1] + sortedGrades[sortedGrades.length / 2]) / 2;
+                            } else {
+                                median = sortedGrades[Math.floor(sortedGrades.length / 2)];
+                            }
+                            
+                            spmValue = (median / maxPoints) * 100;
+                            console.log(`SPM: ${median} ÷ ${maxPoints} × 100 = ${spmValue.toFixed(2)}%`);
+                        }
+                    }
+                    
+                    // BL değerini al: Question points'ten
+                    let blValue = 0;
+                    if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                        blValue = questionPoints[examIndex][q].bl || 0;
+                        console.log(`BL: ${blValue}`);
+                    }
+                    
+                    // Input alanlarını güncelle - hesaplanan değerler
+                    const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
+                    const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
+                    const spmInput = document.querySelector(`input[name="spm_${cloIdx}_${globalQIdx}"]`);
+                    const blInput = document.querySelector(`input[name="bl_${cloIdx}_${globalQIdx}"]`);
+                    
+                    console.log(`Input elements:`, {qctInput, wInput, spmInput, blInput});
+                    
+                    if (qctInput) {
+                        qctInput.value = qctValue.toFixed(2);
+                        qctInput.style.backgroundColor = '#fff3cd';
+                        qctInput.style.fontWeight = 'bold';
+                    }
+                    if (wInput) {
+                        wInput.value = wValue.toFixed(3);
+                        wInput.style.backgroundColor = '#fff3cd';
+                        wInput.style.fontWeight = 'bold';
+                    }
+                    if (spmInput) {
+                        spmInput.value = spmValue.toFixed(2);
+                        spmInput.style.backgroundColor = '#fff3cd';
+                        spmInput.style.fontWeight = 'bold';
+                    }
+                    if (blInput) {
+                        blInput.value = blValue.toFixed(1);
+                        blInput.style.backgroundColor = '#fff3cd';
+                        blInput.style.fontWeight = 'bold';
+                    }
+                    
+                    console.log(`Q${q+1} CLO ${clo}: QCT=${qctValue.toFixed(2)}, W=${wValue.toFixed(3)}, SPM=${spmValue.toFixed(2)}, BL=${blValue.toFixed(1)}`);
+                }
+            });
         });
+        
+        console.log('Bloom Mapping otomatik hesaplama tamamlandı!');
+        
+        // CLO Score tablosunu hesapla ve güncelle
+        updateCLOScoreTable();
+        
+        // Form submit etme - sadece hesaplama yap
+        console.log('Hesaplama tamamlandı, form submit edilmiyor');
     }
+    
+    // CLO Score tablosunu hesapla ve güncelle
+    function updateCLOScoreTable() {
+        console.log('CLO Score tablosu güncelleniyor...');
+        
+        const clos = JSON.parse('{{ clos | tojson | safe }}');
+        const questionPoints = JSON.parse('{{ question_points_nested | tojson | safe }}');
+        const allQuestionsFlatMap = JSON.parse('{{ all_questions_flat_map | tojson | safe }}');
+        
+        clos.forEach((clo, cloIdx) => {
+            let qctList = [];
+            let wList = [];
+            let spmList = [];
+            let blList = [];
+            
+            // Bu CLO için tüm değerleri topla
+            const exams = JSON.parse('{{ exams | tojson | safe }}');
+            exams.forEach((exam, examIndex) => {
+                for (let q = 0; q < exam.question_count; q++) {
+                    const globalQIdx = allQuestionsFlatMap[examIndex][q];
+                    
+                    // Bu CLO bu soruya ait mi kontrol et
+                    let isCLOSelected = false;
+                    if (questionPoints && questionPoints[examIndex] && questionPoints[examIndex][q]) {
+                        const cloList = questionPoints[examIndex][q].clo || [];
+                        isCLOSelected = cloList.includes(clo);
+                    }
+                    
+                    if (isCLOSelected) {
+                        // QCT, W, SPM, BL değerlerini al
+                        const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
+                        const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
+                        const spmInput = document.querySelector(`input[name="spm_${cloIdx}_${globalQIdx}"]`);
+                        const blInput = document.querySelector(`input[name="bl_${cloIdx}_${globalQIdx}"]`);
+                        
+                        if (qctInput && qctInput.value) qctList.push(parseFloat(qctInput.value));
+                        if (wInput && wInput.value) wList.push(parseFloat(wInput.value));
+                        if (spmInput && spmInput.value) spmList.push(parseFloat(spmInput.value));
+                        if (blInput && blInput.value) blList.push(parseFloat(blInput.value));
+                    }
+                }
+            });
+            
+            // CLO Score hesaplamaları
+            let maxCLOScore = 0;
+            let weightedCLOScore = 0;
+            let averageBloomScore = 0;
+            let weightedBloomSum = 0;
+            
+            if (qctList.length > 0 && wList.length > 0) {
+                // Max CLO Score = Σ(QCTᵢ/100 × Wᵢ)
+                maxCLOScore = qctList.reduce((sum, qct, idx) => {
+                    return sum + ((qct / 100) * wList[idx]);
+                }, 0);
+                
+                // Weighted CLO Score = Σ(QCTᵢ/100 × Wᵢ × SPMᵢ/100)
+                if (spmList.length > 0) {
+                    weightedCLOScore = qctList.reduce((sum, qct, idx) => {
+                        return sum + ((qct / 100) * wList[idx] * (spmList[idx] / 100));
+                    }, 0);
+                }
+                
+                // Average Bloom Score = Σ(QCTᵢ/100 × Wᵢ × BLᵢ) / Σ(QCTᵢ/100 × Wᵢ)
+                if (blList.length > 0) {
+                    weightedBloomSum = qctList.reduce((sum, qct, idx) => {
+                        return sum + ((qct / 100) * wList[idx] * blList[idx]);
+                    }, 0);
+                    
+                    if (maxCLOScore > 0) {
+                        averageBloomScore = weightedBloomSum / maxCLOScore;
+                    }
+                }
+                
+                console.log(`CLO ${cloIdx + 1} hesaplamaları:`);
+                console.log(`- QCT List:`, qctList);
+                console.log(`- W List:`, wList);
+                console.log(`- SPM List:`, spmList);
+                console.log(`- BL List:`, blList);
+                console.log(`- Max CLO Score: ${maxCLOScore.toFixed(3)}`);
+                console.log(`- Weighted CLO Score: ${weightedCLOScore.toFixed(3)}`);
+                console.log(`- Average Bloom Score: ${averageBloomScore.toFixed(3)}`);
+                console.log(`- Weighted BL Sum: ${weightedBloomSum.toFixed(2)}`);
+            }
+            
+            // CLO Score tablosunu güncelle - ID'ler ile
+            const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
+            const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
+            const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
+            const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
+            
+            if (maxCLOCell) maxCLOCell.textContent = maxCLOScore.toFixed(3);
+            if (weightedCLOCell) weightedCLOCell.textContent = weightedCLOScore.toFixed(3);
+            if (averageBLCell) averageBLCell.textContent = averageBloomScore.toFixed(3);
+            if (weightedBLSumCell) weightedBLSumCell.textContent = weightedBloomSum.toFixed(2);
+            
+            console.log(`CLO ${cloIdx + 1}: Max=${maxCLOScore.toFixed(3)}, Weighted=${weightedCLOScore.toFixed(3)}, AvgBL=${averageBloomScore.toFixed(3)}, WeightedBLSum=${weightedBloomSum.toFixed(2)}`);
+        });
+        
+        // TOTAL satırını güncelle
+        updateTotalRow();
+        
+        console.log('CLO Score tablosu güncellendi!');
+    }
+    
+    // TOTAL satırını güncelle
+    function updateTotalRow() {
+        const clos = JSON.parse('{{ clos | tojson | safe }}');
+        
+        let totalMaxCLO = 0;
+        let totalWeightedCLO = 0;
+        let totalAverageBL = 0;
+        let totalWeightedBLSum = 0;
+        
+        clos.forEach((clo, cloIdx) => {
+            const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
+            const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
+            const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
+            const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
+            
+            if (maxCLOCell && maxCLOCell.textContent) totalMaxCLO += parseFloat(maxCLOCell.textContent);
+            if (weightedCLOCell && weightedCLOCell.textContent) totalWeightedCLO += parseFloat(weightedCLOCell.textContent);
+            if (averageBLCell && averageBLCell.textContent) totalAverageBL += parseFloat(averageBLCell.textContent);
+            if (weightedBLSumCell && weightedBLSumCell.textContent) totalWeightedBLSum += parseFloat(weightedBLSumCell.textContent);
+        });
+        
+        // TOTAL satırındaki hücreleri güncelle - ID'ler ile
+        const totalMaxCLOCell = document.getElementById('total_max_clo');
+        const totalWeightedCLOCell = document.getElementById('total_weighted_clo');
+        const totalAverageBLCell = document.getElementById('total_avg_bloom');
+        const totalWeightedBLSumCell = document.getElementById('total_weighted_bl_sum');
+        
+        if (totalMaxCLOCell) totalMaxCLOCell.textContent = totalMaxCLO.toFixed(3);
+        if (totalWeightedCLOCell) totalWeightedCLOCell.textContent = totalWeightedCLO.toFixed(3);
+        if (totalAverageBLCell) totalAverageBLCell.textContent = totalAverageBL.toFixed(3);
+        if (totalWeightedBLSumCell) totalWeightedBLSumCell.textContent = totalWeightedBLSum.toFixed(2);
+        
+        console.log(`TOTAL: Max=${totalMaxCLO.toFixed(3)}, Weighted=${totalWeightedCLO.toFixed(3)}, AvgBL=${totalAverageBL.toFixed(3)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
+    }
+
+    // Sayfa yüklendiğinde otomatik hesaplama yap
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bloom modal açıldığında otomatik hesaplama yap
+        const bloomModalBtn = document.getElementById('bloomModalBtn');
+        if (bloomModalBtn) {
+            bloomModalBtn.addEventListener('click', function() {
+                console.log('Bloom Modal butonu tıklandı');
+                // Modal açıldıktan sonra hesaplama yap
+                setTimeout(autoCalculateBloomMapping, 200);
+            });
+        }
+        
+        // Sayfa yüklendiğinde de otomatik hesaplama yap (eğer modal zaten açıksa)
+        setTimeout(() => {
+            const bloomModal = document.getElementById('bloomModal');
+            if (bloomModal && bloomModal.style.display === 'block') {
+                console.log('Sayfa yüklendi, modal açık, otomatik hesaplama yapılıyor...');
+                autoCalculateBloomMapping();
+            }
+        }, 1000);
+    });
 
     setTimeout(recalcCurrentTabStats, 100);
     
