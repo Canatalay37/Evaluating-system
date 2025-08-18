@@ -302,7 +302,7 @@ input[readonly] {
                     {% for exam in exams %}
                         <th class="evaluation-header" colspan="{{ exam.question_count * 4 }}">{{ exam.name }}</th>
                     {% endfor %}
-                    <th class="performance-header" colspan="4">CLO Performance Values</th>
+                    <th class="performance-header" colspan="5">CLO Performance Values</th>
                 </tr>
                 
                 <!-- Question Numbers -->
@@ -314,6 +314,7 @@ input[readonly] {
                     {% endfor %}
                     <th class="performance-header">Max CLO Score</th>
                     <th class="performance-header">CLO Score</th>
+                    <th class="performance-header">Normalized CLO %</th>
                     <th class="performance-header">MW-BL</th>
                     <th class="performance-header">Weighted BL Sum</th>
                 </tr>
@@ -350,6 +351,7 @@ input[readonly] {
                     {% endfor %}
                     <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ)" }}</th>
                     <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × SPMᵢ)" }}</th>
+                    <th class="performance-header">{{ "(CLO Score / Max CLO Score) × 100" }}</th>
                     <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)/∑(QCTᵢ/100 × Wᵢ)" }}</th>
                     <th class="performance-header">{{ "∑(QCTᵢ/100 × Wᵢ × BLᵢ)" }}</th>
                 </tr>
@@ -411,6 +413,7 @@ input[readonly] {
                     <!-- Performance Values -->
                      <td class="calc-cell" id="max_clo_{{ clo_idx }}">0.000</td>
                      <td class="calc-cell" id="weighted_clo_{{ clo_idx }}">0.000</td>
+                     <td class="calc-cell" id="normalized_clo_{{ clo_idx }}">0.00%</td>
                      <td class="calc-cell" id="avg_bloom_{{ clo_idx }}">0.000</td>
                      <td class="calc-cell" id="weighted_bl_sum_{{ clo_idx }}">0.00</td>
                 </tr>
@@ -422,6 +425,7 @@ input[readonly] {
                     <td colspan="{{ exams|sum(attribute='question_count') * 4 }}"></td>
                      <td id="total_max_clo">0.000</td>
                      <td id="total_weighted_clo">0.000</td>
+                     <td id="total_normalized_clo">0.00%</td>
                      <td id="total_avg_bloom">0.000</td>
                      <td id="total_weighted_bl_sum">0.00</td>
                 </tr>
@@ -1109,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // CLO Score hesaplamaları
             let maxCLOScore = 0;
             let weightedCLOScore = 0;
+            let normalizedCLOScore = 0;
             let averageBloomScore = 0;
             let weightedBloomSum = 0;
             
@@ -1123,6 +1128,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     weightedCLOScore = qctList.reduce((sum, qct, idx) => {
                         return sum + ((qct / 100) * wList[idx] * (spmList[idx] / 100));
                     }, 0);
+                    
+                    // Normalized CLO Score = (Weighted CLO Score / Max CLO Score) × 100
+                    if (maxCLOScore > 0) {
+                        normalizedCLOScore = (weightedCLOScore / maxCLOScore) * 100;
+                    }
                 }
                 
                 // Average Bloom Score = Σ(QCTᵢ/100 × Wᵢ × BLᵢ) / Σ(QCTᵢ/100 × Wᵢ)
@@ -1143,6 +1153,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`- BL List:`, blList);
                 console.log(`- Max CLO Score: ${maxCLOScore.toFixed(3)}`);
                 console.log(`- Weighted CLO Score: ${weightedCLOScore.toFixed(3)}`);
+                console.log(`- Normalized CLO Score: ${normalizedCLOScore.toFixed(2)}%`);
                 console.log(`- Average Bloom Score: ${averageBloomScore.toFixed(3)}`);
                 console.log(`- Weighted BL Sum: ${weightedBloomSum.toFixed(2)}`);
             }
@@ -1150,11 +1161,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // CLO Score tablosunu güncelle - ID'ler ile
             const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
             const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
+            const normalizedCLOCell = document.getElementById(`normalized_clo_${cloIdx}`);
             const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
             const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
             
             if (maxCLOCell) maxCLOCell.textContent = maxCLOScore.toFixed(3);
             if (weightedCLOCell) weightedCLOCell.textContent = weightedCLOScore.toFixed(3);
+            if (normalizedCLOCell) normalizedCLOCell.textContent = normalizedCLOScore.toFixed(2) + '%';
             if (averageBLCell) averageBLCell.textContent = averageBloomScore.toFixed(3);
             if (weightedBLSumCell) weightedBLSumCell.textContent = weightedBloomSum.toFixed(2);
             
@@ -1167,40 +1180,45 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('CLO Score tablosu güncellendi!');
     }
     
-    // TOTAL satırını güncelle
-    function updateTotalRow() {
-        const clos = JSON.parse('{{ clos | tojson | safe }}');
-        
-        let totalMaxCLO = 0;
-        let totalWeightedCLO = 0;
-        let totalAverageBL = 0;
-        let totalWeightedBLSum = 0;
-        
-        clos.forEach((clo, cloIdx) => {
-            const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
-            const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
-            const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
-            const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
-            
-            if (maxCLOCell && maxCLOCell.textContent) totalMaxCLO += parseFloat(maxCLOCell.textContent);
-            if (weightedCLOCell && weightedCLOCell.textContent) totalWeightedCLO += parseFloat(weightedCLOCell.textContent);
-            if (averageBLCell && averageBLCell.textContent) totalAverageBL += parseFloat(averageBLCell.textContent);
-            if (weightedBLSumCell && weightedBLSumCell.textContent) totalWeightedBLSum += parseFloat(weightedBLSumCell.textContent);
-        });
-        
-        // TOTAL satırındaki hücreleri güncelle - ID'ler ile
-        const totalMaxCLOCell = document.getElementById('total_max_clo');
-        const totalWeightedCLOCell = document.getElementById('total_weighted_clo');
-        const totalAverageBLCell = document.getElementById('total_avg_bloom');
-        const totalWeightedBLSumCell = document.getElementById('total_weighted_bl_sum');
-        
-        if (totalMaxCLOCell) totalMaxCLOCell.textContent = totalMaxCLO.toFixed(3);
-        if (totalWeightedCLOCell) totalWeightedCLOCell.textContent = totalWeightedCLO.toFixed(3);
-        if (totalAverageBLCell) totalAverageBLCell.textContent = totalAverageBL.toFixed(3);
-        if (totalWeightedBLSumCell) totalWeightedBLSumCell.textContent = totalWeightedBLSum.toFixed(2);
-        
-        console.log(`TOTAL: Max=${totalMaxCLO.toFixed(3)}, Weighted=${totalWeightedCLO.toFixed(3)}, AvgBL=${totalAverageBL.toFixed(3)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
-    }
+         // TOTAL satırını güncelle
+     function updateTotalRow() {
+         const clos = JSON.parse('{{ clos | tojson | safe }}');
+         
+         let totalMaxCLO = 0;
+         let totalWeightedCLO = 0;
+         let totalNormalizedCLO = 0;
+         let totalAverageBL = 0;
+         let totalWeightedBLSum = 0;
+         
+         clos.forEach((clo, cloIdx) => {
+             const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
+             const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
+             const normalizedCLOCell = document.getElementById(`normalized_clo_${cloIdx}`);
+             const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
+             const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
+             
+             if (maxCLOCell && maxCLOCell.textContent) totalMaxCLO += parseFloat(maxCLOCell.textContent);
+             if (weightedCLOCell && weightedCLOCell.textContent) totalWeightedCLO += parseFloat(weightedCLOCell.textContent);
+             if (normalizedCLOCell && normalizedCLOCell.textContent) totalNormalizedCLO += parseFloat(normalizedCLOCell.textContent.replace('%', ''));
+             if (averageBLCell && averageBLCell.textContent) totalAverageBL += parseFloat(averageBLCell.textContent);
+             if (weightedBLSumCell && weightedBLSumCell.textContent) totalWeightedBLSum += parseFloat(weightedBLSumCell.textContent);
+         });
+         
+         // TOTAL satırındaki hücreleri güncelle - ID'ler ile
+         const totalMaxCLOCell = document.getElementById('total_max_clo');
+         const totalWeightedCLOCell = document.getElementById('total_weighted_clo');
+         const totalNormalizedCLOCell = document.getElementById('total_normalized_clo');
+         const totalAverageBLCell = document.getElementById('total_avg_bloom');
+         const totalWeightedBLSumCell = document.getElementById('total_weighted_bl_sum');
+         
+         if (totalMaxCLOCell) totalMaxCLOCell.textContent = totalMaxCLO.toFixed(3);
+         if (totalWeightedCLOCell) totalWeightedCLOCell.textContent = totalWeightedCLO.toFixed(3);
+         if (totalNormalizedCLOCell) totalNormalizedCLOCell.textContent = totalNormalizedCLO.toFixed(2) + '%';
+         if (totalAverageBLCell) totalAverageBLCell.textContent = totalAverageBL.toFixed(3);
+         if (totalWeightedBLSumCell) totalWeightedBLSumCell.textContent = totalWeightedBLSum.toFixed(2);
+         
+         console.log(`TOTAL: Max=${totalMaxCLO.toFixed(3)}, Weighted=${totalWeightedCLO.toFixed(3)}, Normalized=${totalNormalizedCLO.toFixed(2)}%, AvgBL=${totalAverageBL.toFixed(3)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
+     }
 
     // Sayfa yüklendiğinde otomatik hesaplama yap
     document.addEventListener('DOMContentLoaded', function() {

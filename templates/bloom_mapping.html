@@ -170,14 +170,21 @@
                         {% if clo_results and clo_idx < clo_results|length %}
                             {% set clo_result = clo_results[clo_idx] %}
                             
+                            {# Debug: CLO result içeriğini kontrol et #}
+                            <!-- DEBUG: CLO {{ clo_idx + 1 }} - clo_result: {{ clo_result }} -->
+                            
                             {# Normalized CLO % - Python'da hesaplanan değeri kullan #}
                             {% set normalized_clo = clo_result.normalized_clo_score %}
+                            
+                            {# Debug: Normalized CLO değerini kontrol et #}
+                            <!-- DEBUG: CLO {{ clo_idx + 1 }} - normalized_clo: {{ normalized_clo }} -->
                             
                             {# Average Bloom Level-CLO = Average Bloom Score #}
                             {% set avg_bloom_level = clo_result.average_bloom_score %}
                         {% else %}
                             {% set normalized_clo = 0 %}
                             {% set avg_bloom_level = 0 %}
+                            <!-- DEBUG: CLO {{ clo_idx + 1 }} - No clo_results data -->
                         {% endif %}
                         
                         {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}

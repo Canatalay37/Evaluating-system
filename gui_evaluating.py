@@ -522,6 +522,14 @@ def student_grades():
             db.session.commit()
             session["students"] = students
             session["question_points"] = question_points_nested
+            
+            # Debug: Session'a kaydedilen öğrenci verilerini kontrol et
+            print("=== DEBUG: Form submit sonrası session kontrolü ===")
+            print(f"Session'a kaydedilen öğrenci sayısı: {len(students)}")
+            for i, student in enumerate(students[:3]):  # İlk 3 öğrenciyi göster
+                print(f"Öğrenci {i+1}: {student['name']} - grades = {student['grades'][:5]}...")  # İlk 5 notu göster
+            print("=== END DEBUG ===")
+            
             return redirect(url_for("summary"))
 
     session["all_questions_flat"] = all_questions_flat_for_jinja 
@@ -712,6 +720,11 @@ def bloom_mapping():
     
     if not exams:
         return redirect(url_for("student_grades"))
+    
+    print("=== DEBUG: bloom_mapping route başladı ===")
+    print(f"clo_results mevcut mu: {bool(clo_results)}")
+    print(f"question_points_nested mevcut mu: {bool(question_points_nested)}")
+    print(f"students session'da mu: {'students' in session}")
     
     # Eğer clo_results yoksa, hesaplamaları yap
     if not clo_results and question_points_nested:
@@ -908,6 +921,22 @@ def bloom_mapping():
         session["clo_q_data"] = clo_q_data
         session["clo_results"] = clo_results
         session["total_clo_results"] = total_clo_results
+        
+        # Debug: Session'a kaydedilen değerleri kontrol et
+        print("=== DEBUG: Session'a kaydedilen CLO Results ===")
+        for i, result in enumerate(clo_results):
+            print(f"CLO {i+1}: normalized_clo_score = {result.get('normalized_clo_score', 'NOT FOUND')}")
+        print("=== END DEBUG ===")
+        
+        # Debug: Session'daki öğrenci verilerini kontrol et
+        print("=== DEBUG: Session'daki öğrenci verileri ===")
+        if 'students' in session:
+            print(f"Öğrenci sayısı: {len(session['students'])}")
+            for i, student in enumerate(session['students'][:3]):  # İlk 3 öğrenciyi göster
+                print(f"Öğrenci {i+1}: grades = {student.get('grades', [])[:5]}...")  # İlk 5 notu göster
+        else:
+            print("Session'da öğrenci verisi YOK!")
+        print("=== END DEBUG ===")
     
     return render_template(
         "bloom_mapping.html",
@@ -1395,9 +1424,18 @@ def normalized_clo_score(qct_list, w_list, spm_list):
     
     print(f"normalized_clo_score: weighted_score = {weighted_score}, max_score = {max_score}")
     
+    # Detaylı hesaplama adımlarını göster
+    print("normalized_clo_score: Detailed calculation steps:")
+    for i, (qct, w, spm) in enumerate(valid_data):
+        qct_term = (qct / 100) * w
+        spm_term = (qct / 100) * w * (spm / 100)
+        print(f"  Item {i+1}: QCT={qct}, W={w}, SPM={spm}")
+        print(f"    QCT term: ({qct}/100) * {w} = {qct_term}")
+        print(f"    SPM term: ({qct}/100) * {w} * ({spm}/100) = {spm_term}")
+    
     if max_score > 0:
         result = (weighted_score / max_score) * 100
-        print(f"normalized_clo_score: result = {result}")
+        print(f"normalized_clo_score: Final calculation: ({weighted_score} / {max_score}) * 100 = {result}")
         return result
     else:
         print("normalized_clo_score: max_score is 0 - this should not happen with valid data")
