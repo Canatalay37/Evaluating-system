@@ -793,6 +793,8 @@ def bloom_mapping():
         clo_results = []
         for clo_idx in range(1, clo_count+1):
             qct_list, w_list, spm_list, bl_list = [], [], [], []
+            
+            # Bu CLO için tüm soruları tara
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -803,27 +805,52 @@ def bloom_mapping():
                         if rec['clo'] == clo_idx and rec.get('question_idx', q) == q
                     ]
                     
+                    # Debug: CLO mapping kontrolü
+                    if not q_clo_records:
+                        print(f"DEBUG: CLO {clo_idx}, Exam {exam_idx}, Q{q+1}: No CLO mapping found")
+                        print(f"  Available records for this exam: {[rec.get('clo') for rec in question_points_nested[exam_idx]]}")
+                    else:
+                        print(f"DEBUG: CLO {clo_idx}, Exam {exam_idx}, Q{q+1}: Found {len(q_clo_records)} mapping(s)")
+                    
                     if q_clo_records:
                         rec = q_clo_records[0]
                         qct = rec.get('qct', 0.0)
                         w = rec.get('w', 0.0)
                         bl = rec.get('bl', 0.0)
                         
-                        # SPM değerini hesapla
+                        # SPM değerini hesapla - öğrenci notlarından
                         spm = 0.0
                         if 'students' in session and session['students']:
                             students = session['students']
                             grades_for_question = []
                             for student in students:
                                 if (global_q_idx < len(student['grades']) and 
-                                    student['grades'][global_q_idx] not in [0, 0.0, '', None]):
-                                    grades_for_question.append(student['grades'][global_q_idx])
+                                    student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                                    try:
+                                        grade_val = float(student['grades'][global_q_idx])
+                                        if grade_val > 0:
+                                            grades_for_question.append(grade_val)
+                                    except (ValueError, TypeError):
+                                        continue
                             
                             if grades_for_question:
                                 max_points = rec.get('points', 0)
                                 if max_points > 0:
                                     median_val = np.median(grades_for_question)
                                     spm = round((median_val / max_points) * 100, 2)
+                                    print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, median={median_val}, max_points={max_points}, SPM={spm}")
+                                else:
+                                    print(f"CLO {clo_idx}, Q{q+1}: max_points is 0")
+                            else:
+                                print(f"CLO {clo_idx}, Q{q+1}: no valid grades found")
+                                # Eğer not bulunamazsa, varsayılan bir SPM değeri kullan
+                                spm = 50.0  # Varsayılan %50 performans
+                                print(f"CLO {clo_idx}, Q{q+1}: using default SPM = {spm}")
+                        else:
+                            print(f"CLO {clo_idx}, Q{q+1}: no students data in session")
+                            # Öğrenci verisi yoksa, varsayılan bir SPM değeri kullan
+                            spm = 50.0  # Varsayılan %50 performans
+                            print(f"CLO {clo_idx}, Q{q+1}: using default SPM = {spm}")
                         
                         # Sadece bu CLO'ya ait olan soruları ekle
                         if qct > 0 and w > 0:
@@ -831,6 +858,8 @@ def bloom_mapping():
                             w_list.append(w)
                             spm_list.append(spm)
                             bl_list.append(bl)
+                            
+                            print(f"CLO {clo_idx}, Q{q+1}: QCT={qct}, W={w}, SPM={spm}, BL={bl}")
             
             # CLO Score hesaplamaları
             max_clo = max_possible_clo_score(qct_list, w_list)
@@ -838,6 +867,26 @@ def bloom_mapping():
             normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
             weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
             avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
+            
+            # Debug: Eğer normalized_clo 0 ise, nedenini kontrol et
+            if normalized_clo == 0:
+                print(f"WARNING: CLO {clo_idx} normalized_clo is 0!")
+                print(f"  qct_list: {qct_list}")
+                print(f"  w_list: {w_list}")
+                print(f"  spm_list: {spm_list}")
+                print(f"  max_clo: {max_clo}")
+                print(f"  weighted_clo: {weighted_clo}")
+            
+            print(f"CLO {clo_idx} Results:")
+            print(f"  QCT List: {qct_list}")
+            print(f"  W List: {w_list}")
+            print(f"  SPM List: {spm_list}")
+            print(f"  BL List: {bl_list}")
+            print(f"  Max CLO: {max_clo}")
+            print(f"  Weighted CLO: {weighted_clo}")
+            print(f"  Normalized CLO: {normalized_clo}")
+            print(f"  Weighted Bloom: {weighted_bloom}")
+            print(f"  Avg Bloom: {avg_bloom}")
             
             clo_results.append({
                 "max_clo_score": max_clo,
@@ -1326,21 +1375,33 @@ def weighted_clo_score(qct_list, w_list, spm_list):
 def normalized_clo_score(qct_list, w_list, spm_list):
     """Normalize edilmiş CLO skoru hesapla - yüzde olarak"""
     if not qct_list or not w_list or not spm_list or len(qct_list) != len(w_list) or len(w_list) != len(spm_list):
+        print(f"normalized_clo_score: Invalid input lengths - qct:{len(qct_list)}, w:{len(w_list)}, spm:{len(spm_list)}")
         return 0
+    
+    print(f"normalized_clo_score: Input data - qct_list: {qct_list}, w_list: {w_list}, spm_list: {spm_list}")
     
     # Sadece pozitif değerleri olan soruları al
     valid_data = [(qct, w, spm) for qct, w, spm in zip(qct_list, w_list, spm_list) if qct > 0 and w > 0]
     
+    print(f"normalized_clo_score: valid_data = {valid_data}")
+    
     if not valid_data:
+        print("normalized_clo_score: No valid data found - all qct or w values are 0 or negative")
         return 0
     
     # Normalized CLO Score = (Weighted CLO Score / Max Possible CLO Score) * 100
     weighted_score = sum((qct / 100) * w * (spm / 100) for qct, w, spm in valid_data)
     max_score = sum((qct / 100) * w for qct, w, _ in valid_data)
     
+    print(f"normalized_clo_score: weighted_score = {weighted_score}, max_score = {max_score}")
+    
     if max_score > 0:
-        return (weighted_score / max_score) * 100
-    return 0
+        result = (weighted_score / max_score) * 100
+        print(f"normalized_clo_score: result = {result}")
+        return result
+    else:
+        print("normalized_clo_score: max_score is 0 - this should not happen with valid data")
+        return 0
 
 def weighted_bloom_score(qct_list, w_list, bl_list):
     """Ağırlıklı Bloom skoru hesapla"""
