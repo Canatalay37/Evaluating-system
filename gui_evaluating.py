@@ -10,12 +10,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
 
-# Veritabanı yapılandırması
+# Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evaluation_system.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Veritabanı Modelleri
+# Database Models
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_code = db.Column(db.String(50), nullable=False)
@@ -23,7 +23,7 @@ class Course(db.Model):
     semester = db.Column(db.String(50), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # İlişkiler
+    # Relationships
     exams = db.relationship('Exam', backref='course', lazy=True, cascade='all, delete-orphan')
     clos = db.relationship('CLO', backref='course', lazy=True, cascade='all, delete-orphan')
     students = db.relationship('Student', backref='course', lazy=True, cascade='all, delete-orphan')
@@ -36,7 +36,7 @@ class Exam(db.Model):
     weight = db.Column(db.Integer, nullable=False)
     students_per_exam = db.Column(db.Integer, nullable=False)
     
-    # İlişkiler
+    # Relationships
     questions = db.relationship('Question', backref='exam', lazy=True, cascade='all, delete-orphan')
 
 class CLO(db.Model):
@@ -54,7 +54,7 @@ class Question(db.Model):
     w = db.Column(db.Float, default=0.0)
     bl = db.Column(db.Float, default=0.0)
     
-    # İlişkiler
+    # Relationships
     clo_mappings = db.relationship('QuestionCLOMapping', backref='question', lazy=True, cascade='all, delete-orphan')
     grades = db.relationship('Grade', backref='question', lazy=True, cascade='all, delete-orphan')
 
@@ -69,7 +69,7 @@ class Student(db.Model):
     number = db.Column(db.String(50), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     
-    # İlişkiler
+    # Relationships
     grades = db.relationship('Grade', backref='student', lazy=True, cascade='all, delete-orphan')
 
 class Grade(db.Model):
@@ -78,7 +78,7 @@ class Grade(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
     grade = db.Column(db.Float, nullable=False)
 
-# Veritabanını oluştur
+# Create database
 with app.app_context():
     db.create_all()
 
@@ -92,7 +92,7 @@ def main():
         semester = request.form["semester"]
         
         exam_count = int(request.form["exam_count"])
-        # Her sınav için ayrı öğrenci sayısı (liste)
+        # Separate student count for each exam (list)
         students_per_exam = []
         for i in range(exam_count):
             val = request.form.get(f"students_per_exam_{i}", "0")
@@ -100,10 +100,10 @@ def main():
                 students_per_exam.append(int(val))
             except ValueError:
                 students_per_exam.append(0)
-        # Toplam öğrenci sayısı (özellikle student_grades için var olan mantığı korumak üzere maksimumu al)
+        # Total student count (take maximum to preserve existing logic especially for student_grades)
         student_count = max(students_per_exam) if students_per_exam else 0
         
-        # Veritabanına kaydet
+        # Save to database
         course = Course(
             course_code=course_code,
             teacher_name=teacher_name,
@@ -112,7 +112,7 @@ def main():
         db.session.add(course)
         db.session.commit()
         
-        # Session'a course_id'yi kaydet
+        # Save course_id to session
         session["course_id"] = course.id
         session["course_code"] = course_code
         session["teacher_name"] = teacher_name
@@ -150,7 +150,7 @@ def exam_details():
             clo_name = request.form.get(f"clo_name_{i}", f"CLO {i+1}")
             clo_names.append(clo_name)
         
-        # CLO'ları veritabanına kaydet
+        # Save CLOs to database
         for i, name in enumerate(clo_names):
             clo = CLO(course_id=course_id, name=name, order=i+1)
             db.session.add(clo)
@@ -170,7 +170,7 @@ def exam_details():
         
         db.session.commit()
         
-        # Session'a güncelle
+        # Update session
         session["exams"] = [{"name": e.name, "question_count": e.question_count, "weight": e.weight} for e in exams]
         session["clo_count"] = clo_count
         session["clo_names"] = clo_names
@@ -207,7 +207,7 @@ def question_points():
         return redirect(url_for("exam_details"))
     
     if request.method == "POST":
-        # Sunucu tarafı doğrulama: her sınavın soru puanları toplamı 100 olmalı
+        # Server-side validation: each exam's question points total must be 100
         question_points_list = []
         for idx, exam in enumerate(exams):
             running_sum = 0.0
@@ -217,13 +217,13 @@ def question_points():
                 running_sum += points
                 clo_keys = request.form.getlist(f"clo_{idx}_{q}")
                 selected_clos = [int(c) for c in clo_keys]
-                # QCT değerini otomatik hesapla: (Soru puanı × Sınav yüzdesi) ÷ 100
+                # Automatically calculate QCT value: (Question points × Exam percentage) ÷ 100
                 qct = (points * exam["weight"]) / 100
                 bl = float(request.form.get(f"bl_{idx}_{q}", 0))
                 n_clo = len(selected_clos)
                 w_val = 1.0 / n_clo if n_clo > 0 else 0.0
                 
-                # Question'ı veritabanına kaydet
+                # Save Question to database
                 exam_db = Exam.query.filter_by(course_id=course_id, name=exam["name"]).first()
                 if exam_db:
                     question = Question(
@@ -236,7 +236,7 @@ def question_points():
                     db.session.add(question)
                     db.session.flush()  # ID'yi al
                     
-                    # CLO mapping'leri kaydet
+                    # Save CLO mappings
                     for clo_idx in selected_clos:
                         clo = CLO.query.filter_by(course_id=course_id, order=clo_idx).first()
                         if clo:
@@ -245,14 +245,14 @@ def question_points():
                         else:
                             # CLO bulunamadıysa log ekle
                             print(f"CLO with order {clo_idx} not found for course {course_id}")
-                            # Hata durumunda kullanıcıya bilgi ver
+                            # Inform user in case of error
                             return f"CLO {clo_idx} not found for course. Please check CLO configuration.", 400
                     
                     # En az bir CLO seçilmiş olmalı
                     if not selected_clos:
                         return f"Question {q+1} in {exam['name']} must have at least one CLO selected.", 400
                     
-                    # QCT artık otomatik hesaplandığı için validation gerekmez
+                    # QCT is now automatically calculated, so validation is not needed
                     # if qct < 0 or qct > 100:
                     #     return f"Question {q+1} in {exam['name']} QCT value must be between 0 and 100.", 400
                     
@@ -272,7 +272,7 @@ def question_points():
             question_points_list.append(questions)
             # Toplamı kontrol et
             if abs(running_sum - 100.0) > 1e-6:
-                return f"{exams[idx]['name']} için soru puanları toplamı {running_sum}. Toplam 100 olmalı.", 400
+                return f"Question points total for {exams[idx]['name']} is {running_sum}. Total must be 100.", 400
         
         db.session.commit()
         session["question_points"] = question_points_list
@@ -298,11 +298,11 @@ def student_grades():
     if not course:
         return redirect(url_for("main"))
     
-    # Veritabanından verileri al
+            # Get data from database
     exams_db = Exam.query.filter_by(course_id=course_id).all()
     students_db = Student.query.filter_by(course_id=course_id).all()
     
-    # Session'dan verileri al (geriye uyumluluk için)
+            # Get data from session (for backward compatibility)
     exams = session.get("exams", [])
     student_count = session.get("student_count")
     question_points_nested = session.get("question_points")
@@ -329,31 +329,53 @@ def student_grades():
             })
             global_q_idx_counter += 1
 
-    # students_data'yı veritabanından al veya boş liste olarak başlat
+    # students_data'yı session'dan al, yoksa veritabanından al
     students_data = []
-    if students_db:
+    
+    # Önce session'dan kontrol et
+    if 'students' in session and session['students']:
+        students_data = session['students']
+        print(f"=== DEBUG: Using students data from session: {len(students_data)} students ===")
+        # Debug: Session'daki verileri kontrol et
+        for i, student in enumerate(students_data[:3]):  # İlk 3 öğrenciyi göster
+            print(f"Session Öğrenci {i+1}: {student.get('name', 'N/A')} - grades = {student.get('grades', [])[:5]}...")
+    elif students_db:
+        print("=== DEBUG: No students data in session, checking database ===")
+        # Session'da yoksa veritabanından al
         for student in students_db:
-            grades = [''] * len(all_questions_flat_for_jinja)
-            # Veritabanından grades'ları al
+            grades = [0.0] * len(all_questions_flat_for_jinja)
+            # Veritabanından grades'ları al - doğru mapping ile
             for grade in student.grades:
-                if grade.question_id < len(grades):
-                    grades[grade.question_id] = grade.grade
+                # Question'ın exam_id ve question_idx'ini bul
+                question = Question.query.get(grade.question_id)
+                if question:
+                    # Bu question'ın global_question_idx'ini bul
+                    global_q_idx = 0
+                    for exam_idx, exam in enumerate(exams_db):
+                        for q_idx_in_exam in range(int(exam.question_count)):
+                            if exam.id == question.exam_id and q_idx_in_exam == question.question_idx:
+                                if global_q_idx < len(grades):
+                                    grades[global_q_idx] = grade.grade
+                                break
+                            global_q_idx += 1
             
             students_data.append({
                 "number": student.number,
                 "name": student.name,
                 "grades": grades,
-                "total": sum(g for g in grades if g not in [0, 0.0, '', None])
+                "total": sum(g for g in grades if g not in [None])
             })
+        print(f"=== DEBUG: Using students data from database: {len(students_data)} students ===")
     else:
-        # Boş öğrenci listesi oluştur
+        # Hiçbiri yoksa boş liste oluştur
         for i in range(student_count):
             students_data.append({
                 "number": "",
                 "name": "",
-                "grades": [''] * len(all_questions_flat_for_jinja),
+                "grades": [0.0] * len(all_questions_flat_for_jinja),
                 "total": 0.0
             })
+        print(f"=== DEBUG: Creating empty students data: {len(students_data)} students ===")
 
     if request.method == "POST":
         # Check if this is a bloom mapping form submission
@@ -362,7 +384,7 @@ def student_grades():
             clo_count = session.get("clo_count", 10)
             clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
             
-            # Form verilerini işle ve session'a kaydet
+            # Process form data and save to session
             clo_q_data = []
             global_q_idx_counter = 0
             for clo_idx in range(1, clo_count+1):
@@ -386,7 +408,7 @@ def student_grades():
             
             session["clo_q_data"] = clo_q_data
             
-            # Hesaplamaları yap
+            # Perform calculations
             all_questions_flat_map = []
             global_q_idx_counter = 0
             for exam_idx, exam in enumerate(exams):
@@ -430,7 +452,7 @@ def student_grades():
             session["clo_results"] = clo_results
             session["total_clo_results"] = total_clo_results
             
-            # SPM değerlerini otomatik olarak güncelle
+            # Automatically update SPM values
             if 'students' in session and session['students']:
                 students = session['students']
                 question_performance_medians = []
@@ -523,14 +545,14 @@ def student_grades():
             session["students"] = students
             session["question_points"] = question_points_nested
             
-            # Debug: Session'a kaydedilen öğrenci verilerini kontrol et
-            print("=== DEBUG: Form submit sonrası session kontrolü ===")
-            print(f"Session'a kaydedilen öğrenci sayısı: {len(students)}")
-            for i, student in enumerate(students[:3]):  # İlk 3 öğrenciyi göster
-                print(f"Öğrenci {i+1}: {student['name']} - grades = {student['grades'][:5]}...")  # İlk 5 notu göster
-            print("=== END DEBUG ===")
+                    # Debug: Check student data saved to session
+        print("=== DEBUG: Session check after form submit ===")
+        print(f"Number of students saved to session: {len(students)}")
+        for i, student in enumerate(students[:3]):  # Show first 3 students
+            print(f"Student {i+1}: {student['name']} - grades = {student['grades'][:5]}...")  # Show first 5 grades
+        print("=== END DEBUG ===")
             
-            return redirect(url_for("summary"))
+        return redirect(url_for("summary"))
 
     session["all_questions_flat"] = all_questions_flat_for_jinja 
     
@@ -569,7 +591,7 @@ def student_grades():
                         if q_clo_records:
                             rec = q_clo_records[0]
                             
-                            # SPM değerini otomatik hesapla
+                            # Automatically calculate SPM value
                             spm_val = 0.0
                             if 'students' in session and session['students']:
                                 students = session['students']
@@ -591,12 +613,12 @@ def student_grades():
                                         median_val = np.median(grades_for_question)
                                         spm_val = round((median_val / max_points) * 100, 2)
                             else:
-                                # Eğer öğrenci verisi yoksa, question_performance_medians'dan al
+                                # If no student data, get from question_performance_medians
                                 question_performance_medians = session.get("question_performance_medians", [])
                                 if global_q_idx_counter < len(question_performance_medians):
                                     spm_val = question_performance_medians[global_q_idx_counter]
                             
-                            # QCT ve W değerlerini doğru şekilde al
+                            # Get QCT and W values correctly
                             qct_val = rec.get('qct', 0.0)
                             w_val = rec.get('w', 0.0)
                             bl_val = rec.get('bl', 0.0)
@@ -638,7 +660,7 @@ def student_grades():
                         w = rec.get('w', 0.0)
                         bl = rec.get('bl', 0.0)
                         
-                        # SPM değerini hesapla
+                        # Calculate SPM value
                         spm = 0.0
                         if 'students' in session and session['students']:
                             students = session['students']
@@ -721,12 +743,12 @@ def bloom_mapping():
     if not exams:
         return redirect(url_for("student_grades"))
     
-    print("=== DEBUG: bloom_mapping route başladı ===")
-    print(f"clo_results mevcut mu: {bool(clo_results)}")
-    print(f"question_points_nested mevcut mu: {bool(question_points_nested)}")
-    print(f"students session'da mu: {'students' in session}")
+    print("=== DEBUG: bloom_mapping route started ===")
+    print(f"clo_results exists: {bool(clo_results)}")
+    print(f"question_points_nested exists: {bool(question_points_nested)}")
+    print(f"students in session: {'students' in session}")
     
-    # Eğer clo_results yoksa, hesaplamaları yap
+    # If clo_results doesn't exist, perform calculations
     if not clo_results and question_points_nested:
         # Create all_questions_flat_map for bloom mapping
         all_questions_flat_map = []
@@ -745,7 +767,7 @@ def bloom_mapping():
             global_q_idx_counter = 0
             for exam_idx, exam in enumerate(exams):
                 for q_idx_in_exam in range(int(exam['question_count'])):
-                    # Bu CLO için bu sorunun verilerini bul
+                    # Find this question's data for this CLO
                     q_clo_records = [
                         rec for rec in question_points_nested[exam_idx]
                         if rec['clo'] == clo_idx and rec.get('question_idx', q_idx_in_exam) == q_idx_in_exam
@@ -753,7 +775,7 @@ def bloom_mapping():
                     
                     if q_clo_records:
                         rec = q_clo_records[0]
-                        # SPM değerini otomatik hesapla
+                        # Automatically calculate SPM value
                         spm_val = 0.0
                         if 'students' in session and session['students']:
                             students = session['students']
@@ -775,12 +797,12 @@ def bloom_mapping():
                                     median_val = np.median(grades_for_question)
                                     spm_val = round((median_val / max_points) * 100, 2)
                         else:
-                            # Eğer öğrenci verisi yoksa, question_performance_medians'dan al
+                            # If no student data, get from question_performance_medians
                             question_performance_medians = session.get("question_performance_medians", [])
                             if global_q_idx_counter < len(question_performance_medians):
                                 spm_val = question_performance_medians[global_q_idx_counter]
                         
-                        # QCT ve W değerlerini doğru şekilde al
+                        # Get QCT and W values correctly
                         qct_val = rec.get('qct', 0.0)
                         w_val = rec.get('w', 0.0)
                         bl_val = rec.get('bl', 0.0)
@@ -792,7 +814,7 @@ def bloom_mapping():
                             'bl': bl_val,
                         }
                     else:
-                        # Bu CLO için bu soru yok, 0 değerleri ata
+                        # This question doesn't exist for this CLO, assign 0 values
                         clo_row[global_q_idx_counter] = {
                             'qct': 0.0,
                             'w': 0.0,
@@ -807,7 +829,7 @@ def bloom_mapping():
         for clo_idx in range(1, clo_count+1):
             qct_list, w_list, spm_list, bl_list = [], [], [], []
             
-            # Bu CLO için tüm soruları tara
+            # Scan all questions for this CLO
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -818,7 +840,7 @@ def bloom_mapping():
                         if rec['clo'] == clo_idx and rec.get('question_idx', q) == q
                     ]
                     
-                    # Debug: CLO mapping kontrolü
+                    # Debug: CLO mapping check
                     if not q_clo_records:
                         print(f"DEBUG: CLO {clo_idx}, Exam {exam_idx}, Q{q+1}: No CLO mapping found")
                         print(f"  Available records for this exam: {[rec.get('clo') for rec in question_points_nested[exam_idx]]}")
@@ -831,7 +853,7 @@ def bloom_mapping():
                         w = rec.get('w', 0.0)
                         bl = rec.get('bl', 0.0)
                         
-                        # SPM değerini hesapla - öğrenci notlarından
+                        # Calculate SPM value - from student grades
                         spm = 0.0
                         if 'students' in session and session['students']:
                             students = session['students']
@@ -854,16 +876,15 @@ def bloom_mapping():
                                     print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, median={median_val}, max_points={max_points}, SPM={spm}")
                                 else:
                                     print(f"CLO {clo_idx}, Q{q+1}: max_points is 0")
+                                    spm = 50.0  # Default 50% performance
                             else:
                                 print(f"CLO {clo_idx}, Q{q+1}: no valid grades found")
-                                # Eğer not bulunamazsa, varsayılan bir SPM değeri kullan
-                                spm = 50.0  # Varsayılan %50 performans
-                                print(f"CLO {clo_idx}, Q{q+1}: using default SPM = {spm}")
+                                spm = 50.0  # Default 50% performance
                         else:
                             print(f"CLO {clo_idx}, Q{q+1}: no students data in session")
-                            # Öğrenci verisi yoksa, varsayılan bir SPM değeri kullan
-                            spm = 50.0  # Varsayılan %50 performans
-                            print(f"CLO {clo_idx}, Q{q+1}: using default SPM = {spm}")
+                            spm = 50.0  # Default 50% performance
+                        
+                        print(f"CLO {clo_idx}, Q{q+1}: using default SPM = {spm}")
                         
                         # Sadece bu CLO'ya ait olan soruları ekle
                         if qct > 0 and w > 0:
@@ -1486,6 +1507,14 @@ def save_exam_data():
         
         exam = exam_db[exam_idx]
         
+        # Session'dan exams verilerini al
+        exams = session.get("exams", [])
+        if not exams:
+            return jsonify({"success": False, "error": "Sınav verileri bulunamadı"})
+        
+        # Session'daki mevcut öğrenci verilerini al
+        current_session_students = session.get("students", [])
+        
         # Her öğrenci için verileri kaydet/güncelle
         for student_data in students_data:
             student_number = student_data.get("number", "")
@@ -1504,9 +1533,9 @@ def save_exam_data():
                 
                 # Notları kaydet/güncelle
                 for grade_idx, grade_value in enumerate(grades):
-                    if grade_idx < len(exam.questions):
-                        question = exam.questions[grade_idx]
-                        
+                    # Bu grade_idx'e karşılık gelen question'ı bul
+                    question = Question.query.filter_by(exam_id=exam.id, question_idx=grade_idx).first()
+                    if question:
                         # Mevcut notu bul veya yeni oluştur
                         existing_grade = Grade.query.filter_by(student_id=student.id, question_id=question.id).first()
                         if existing_grade:
@@ -1514,6 +1543,56 @@ def save_exam_data():
                         else:
                             new_grade = Grade(student_id=student.id, question_id=question.id, grade=grade_value)
                             db.session.add(new_grade)
+                
+                # Session'daki öğrenci verilerini güncelle - sadece bu sınavın notlarını güncelle
+                session_student_found = False
+                for session_student in current_session_students:
+                    if session_student.get("number") == student_number:
+                        session_student["name"] = student_name
+                        
+                        # Bu sınavın başlangıç indeksini bul
+                        start_idx = 0
+                        for i in range(exam_idx):
+                            start_idx += int(exams[i]['question_count'])
+                        
+                        # Sadece bu sınavın notlarını güncelle
+                        for i, grade in enumerate(grades):
+                            if start_idx + i < len(session_student["grades"]):
+                                session_student["grades"][start_idx + i] = grade
+                        
+                        # Toplamı yeniden hesapla
+                        session_student["total"] = sum(g for g in session_student["grades"] if g not in [None])
+                        session_student_found = True
+                        break
+                
+                # Eğer session'da yoksa ekle
+                if not session_student_found:
+                    # Tüm sınavlar için boş notlar oluştur
+                    all_grades = [0.0] * sum(int(exam['question_count']) for exam in exams)
+                    
+                    # Bu sınavın notlarını yerleştir
+                    start_idx = 0
+                    for i in range(exam_idx):
+                        start_idx += int(exams[i]['question_count'])
+                    
+                    for i, grade in enumerate(grades):
+                        if start_idx + i < len(all_grades):
+                            all_grades[start_idx + i] = grade
+                    
+                    current_session_students.append({
+                        "number": student_number,
+                        "name": student_name,
+                        "grades": all_grades,
+                        "total": sum(g for g in all_grades if g not in [None])
+                    })
+        
+        # Session'ı güncelle
+        session["students"] = current_session_students
+        
+        # Debug: Session'a kaydedilen verileri kontrol et
+        print(f"=== DEBUG: save_exam_data - Session'a kaydedilen öğrenci sayısı: {len(current_session_students)} ===")
+        for i, student in enumerate(current_session_students[:3]):  # İlk 3 öğrenciyi göster
+            print(f"Öğrenci {i+1}: {student.get('name', 'N/A')} - grades = {student.get('grades', [])[:5]}...")
         
         db.session.commit()
         return jsonify({"success": True, "message": "Veriler başarıyla kaydedildi"})

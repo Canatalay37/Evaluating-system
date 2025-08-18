@@ -41,6 +41,8 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
     </div>
 </div>
 
+
+
 {% for exam_idx, exam in enumerate(exams) %}
     <h3>{{ exam.name }} Exam</h3>
     <table class="summary-table">
@@ -164,7 +166,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
         margin-right: 15px;
     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(111, 66, 193, 0.3)'" 
        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)'">
-        📊 Bloom Level & CLO Analysis
+        📊 Results
     </a>
     
     <a href="/download_all_tables" style="
@@ -180,7 +182,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(40, 167, 69, 0.3)'" 
        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)'">
-        📥 Tüm Tabloları İndir (CSV)
+        📥 Download All Tables (CSV)
     </a>
 </div>
 

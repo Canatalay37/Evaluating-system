@@ -415,18 +415,7 @@
                             <td>Draw connections among ideas</td>
                             <td>Analyze, compare, contrast, examine</td>
                         </tr>
-                        <tr>
-                            <td><strong>5</strong></td>
-                            <td>Evaluate</td>
-                            <td>Justify a stand or decision</td>
-                            <td>Evaluate, critique, judge, defend</td>
-                        </tr>
-                        <tr>
-                            <td><strong>6</strong></td>
-                            <td>Create</td>
-                            <td>Produce new or original work</td>
-                            <td>Create, design, construct, develop</td>
-                        </tr>
+
                     </tbody>
                 </table>
             </div>
@@ -546,7 +535,7 @@
             document.getElementById('qpForm').addEventListener('submit', function(e) {
                 if (!checkFormValidity()) {
                 e.preventDefault();
-                    alert('Lütfen tüm alanları doğru şekilde doldurun:\n- Her sınav için toplam puan 100 olmalı\n- Her soru için CLO seçilmeli\n- Her soru için BL değeri (1-6) girilmeli');
+                    alert('Please fill all fields correctly:\n- Total points for each exam must be 100\n- CLO must be selected for each question\n- BL value (1-6) must be entered for each question');
                     return false;
             }
                 console.log('Form gönderiliyor...');

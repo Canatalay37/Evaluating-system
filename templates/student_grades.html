@@ -259,8 +259,7 @@ input[readonly] {
 <body>
 <h2>Student Information and Grade Entry</h2>
 
-<!-- Bloom Level Mapping Button -->
-<button id="bloomModalBtn" class="top-right-button">Bloom Level Mapping</button>
+
 
 <!-- Course Information Display -->
 <div style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; backdrop-filter: blur(5px);">
@@ -287,12 +286,12 @@ input[readonly] {
         <span class="close">&times;</span>
         <h2>Bloom Level Mapping</h2>
         
-        <!-- Otomatik Hesaplama Bilgisi -->
-        <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
-            <strong>ℹ️ Bilgi:</strong> Tüm değerler (QCT, W, SPM, BL) otomatik olarak hesaplanıp girilir. 
-            QCT: (Soru puanı × Sınav yüzdesi) ÷ 100 | W: 1 ÷ CLO sayısı | SPM: Öğrenci performans medyanı | BL: Bloom seviyesi
-            <br><strong>⚠️ Önemli:</strong> Bu alanlar otomatik hesaplanır ve değiştirilemez!
-        </div>
+                 <!-- Automatic Calculation Information -->
+         <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
+             <strong>ℹ️ Information:</strong> All values (QCT, W, SPM, BL) are automatically calculated and entered. 
+             QCT: (Question points × Exam percentage) ÷ 100 | W: 1 ÷ CLO count | SPM: Student performance median | BL: Bloom level
+             <br><strong>⚠️ Important:</strong> These fields are automatically calculated and cannot be modified!
+         </div>
 
         <form method="post" id="bloomForm">
             <table class="bloom-table">
@@ -396,16 +395,7 @@ input[readonly] {
 
         </form>
         
-        <!-- Save Button for Bloom Mapping -->
-        <div style="text-align: center; margin: 20px 0;">
-          <button type="button" id="recalculateSPMBtn" style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-right: 10px;">
-            🔄 SPM Değerlerini Yeniden Hesapla
-          </button>
-          <button type="button" id="saveBloomMappingBtn" style="background: #6f42c1; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
-            💾 Bloom Mapping Verilerini Kaydet
-          </button>
-          <div id="bloomSaveStatus" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
-        </div>
+
     </div>
 </div>
 
@@ -418,6 +408,24 @@ input[readonly] {
     {{ exam.name }}  
       </button>
     {% endfor %}
+    <!-- Overall Button positioned with exam tabs -->
+    <button type="button" id="bloomModalBtn" style="
+        background: linear-gradient(135deg, #6f42c1, #5a2d91);
+        color: white;
+        border: 1px solid #6f42c1;
+        border-bottom: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+        margin-right: 5px;
+        font-weight: bold;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(111, 66, 193, 0.3)'" 
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        📊 Overall
+    </button>
   </div>
 
   {% for exam_idx, exam in enumerate(exams) %}
@@ -447,10 +455,9 @@ input[readonly] {
               {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %} 
                 <td>
-                  {% set existing_val = '' %}
+                  {% set existing_val = 0 %}
                   {% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx %}
-                    {% set _g = students_data[student_idx].grades[q_flat.global_question_idx] %}
-                    {% if _g not in [0, 0.0, '0', '0.0'] %}{% set existing_val = _g %}{% endif %}
+                    {% set existing_val = students_data[student_idx].grades[q_flat.global_question_idx] %}
                   {% endif %}
                   <input type="number" 
                          class="grade-input" 
@@ -542,9 +549,9 @@ input[readonly] {
       
       <!-- Save Button for Each Exam -->
       <div style="text-align: center; margin: 15px 0;">
-        <button type="button" class="save-exam-btn" data-exam="{{ exam_idx }}" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-          💾 {{ exam.name }} Verilerini Kaydet
-        </button>
+                 <button type="button" class="save-exam-btn" data-exam="{{ exam_idx }}" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+           💾 Save {{ exam.name }} Data
+         </button>
         <div class="save-status" data-exam="{{ exam_idx }}" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
       </div>
     </div>
@@ -554,10 +561,10 @@ input[readonly] {
 <button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
 </form>
 
-<!-- Bloom Analysis Page Button at bottom -->
+<!-- Result Button at bottom -->
 <div style="margin-top: 30px; text-align: center;">
     <a href="{{ url_for('bloom_mapping') }}" class="submit-btn" style="background-color: #17a2b8; display: inline-block; margin: 0;">
-        📊 Bloom Analysis Page
+        📊 Result
     </a>
 </div>
 
@@ -720,9 +727,9 @@ function openTab(event, tabId) {
     document.getElementById(tabId).classList.add('active');
     event.currentTarget.classList.add('active');
 
-    // Bu yeni kod bloğu ile indirme butonunun linki güncelleniyor
-    const examIndex = event.currentTarget.getAttribute('data-exam-index');
-    //burası değiştii
+         // Update download button link with this new code block
+     const examIndex = event.currentTarget.getAttribute('data-exam-index');
+     //this part changed
     const form = document.getElementById('gradesForm');
     form.action = `/student_grades`;
     form.method = 'post';
@@ -741,19 +748,65 @@ document.addEventListener('DOMContentLoaded', function() {
     inp.addEventListener('input', recalcCurrentTabStats);
     inp.addEventListener('change', recalcCurrentTabStats);
     
-    // Otomatik kaydetme (3 saniye sonra)
+             // Auto-save (after 3 seconds)
     let saveTimer;
     inp.addEventListener('input', function() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
         const examIdx = this.closest('.tab-content').id.replace('exam-', '');
-        const saveBtn = document.querySelector(`.save-exam-btn[data-exam="${examIdx}"]`);
-        if (saveBtn) {
-          saveBtn.click();
-        }
         
-        // Öğrenci notu değiştiğinde SPM değerlerini güncelle
-        console.log('Öğrenci notu değişti, SPM güncelleniyor...');
+        // Auto-save all student data for this exam
+        const examData = {
+            exam_idx: parseInt(examIdx),
+            students: []
+        };
+        
+        const currentTab = document.getElementById(`exam-${examIdx}`);
+        const studentRows = currentTab.querySelectorAll('.student-row');
+        
+        studentRows.forEach((row, studentIdx) => {
+            const studentNumber = row.querySelector('input[name^="student_number_"]').value;
+            const studentName = row.querySelector('input[name^="student_name_"]').value;
+            const grades = [];
+            
+            // Get grades for this exam - use global question indices
+            const currentExamQuestions = allQuestionsFlat.filter(q => q.exam_idx === parseInt(examIdx));
+            currentExamQuestions.forEach(question => {
+                const gradeInput = row.querySelector(`input[name="grade_${studentIdx}_${question.global_question_idx}"]`);
+                const grade = gradeInput ? (parseFloat(gradeInput.value) || 0) : 0;
+                grades.push(grade);
+            });
+            
+            examData.students.push({
+                student_idx: studentIdx,
+                number: studentNumber,
+                name: studentName,
+                grades: grades
+            });
+        });
+        
+        // Auto-save to database via AJAX
+        fetch('/save_exam_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(examData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Auto-save successful');
+            } else {
+                console.log('Auto-save error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.log('Auto-save connection error: ' + error);
+        });
+        
+        // Update SPM values when student grade changes
+        console.log('Student grade changed, updating SPM...');
         setTimeout(function() {
             calculateAllSPMValues();
             // Bloom modal açıksa tabloyu da güncelle
@@ -766,8 +819,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  // Sayfa yüklendiğinde ilk sekmenin linkini ayarlar
-  const downloadButton = document.getElementById('downloadCsvButton');
+     // Set the first tab's link when page loads
+   const downloadButton = document.getElementById('downloadCsvButton');
   const form = document.getElementById('gradesForm');
 
     if (downloadButton) {
@@ -788,43 +841,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const span = document.getElementsByClassName('close')[0];
 
     // Open modal
-    btn.onclick = function() {
+    btn.onclick = function(event) {
+        event.preventDefault(); // Prevent any default behavior
+        event.stopPropagation(); // Stop event bubbling
         modal.style.display = 'block';
-        // Modal açıldıktan sonra otomatik hesaplama yap
+        // Perform automatic calculation after modal opens
         setTimeout(autoCalculateBloomMapping, 300);
     }
 
-    // Recalculate SPM button
-    const recalculateSPMBtn = document.getElementById('recalculateSPMBtn');
-    if (recalculateSPMBtn) {
-        recalculateSPMBtn.onclick = function() {
-            console.log('SPM değerleri manuel olarak yeniden hesaplanıyor...');
-            calculateAllSPMValues();
-            // Bloom modal açıksa tabloyu da güncelle
-            const bloomModal = document.getElementById('bloomModal');
-            if (bloomModal && bloomModal.style.display === 'block') {
-                updateBloomMappingTable();
-            }
-            // Kullanıcıya bilgi ver
-            alert('SPM değerleri yeniden hesaplandı!');
-        }
-    }
+
 
     // Close modal
-    span.onclick = function() {
+    span.onclick = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
         modal.style.display = 'none';
     }
 
     // Close modal when clicking outside of it
     window.onclick = function(event) {
         if (event.target == modal) {
+            event.preventDefault();
             modal.style.display = 'none';
         }
     }
 
-    // Sayfa yüklendiğinde SPM değerlerini hesapla (eğer öğrenci notları varsa)
+         // Calculate SPM values when page loads (if student grades exist)
     setTimeout(function() {
-        console.log('Sayfa yüklendi, SPM değerleri kontrol ediliyor...');
+                 console.log('Page loaded, checking SPM values...');
         const gradeInputs = document.querySelectorAll('.grade-input');
         let hasGrades = false;
         gradeInputs.forEach(input => {
@@ -833,35 +877,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        if (hasGrades) {
-            console.log('Öğrenci notları bulundu, SPM değerleri hesaplanıyor...');
-            calculateAllSPMValues();
-        }
+                 if (hasGrades) {
+             console.log('Student grades found, calculating SPM values...');
+             calculateAllSPMValues();
+         }
         
-        // Bloom modal açıksa tabloyu da güncelle
-        const bloomModal = document.getElementById('bloomModal');
-        if (bloomModal && bloomModal.style.display === 'block') {
-            console.log('Bloom modal açık, tablo güncelleniyor...');
-            updateBloomMappingTable();
-        }
+                 // Bloom modal açıksa tabloyu da güncelle
+         const bloomModal = document.getElementById('bloomModal');
+         if (bloomModal && bloomModal.style.display === 'block') {
+             console.log('Bloom modal is open, updating table...');
+             updateBloomMappingTable();
+         }
     }, 1000);
 
     // Global SPM storage
     let globalSPMValues = {};
     
-    // Tüm sorular için SPM değerlerini hesapla
-    function calculateAllSPMValues() {
-        console.log('Tüm sorular için SPM değerleri hesaplanıyor...');
+         // Calculate SPM values for all questions
+     function calculateAllSPMValues() {
+         console.log('Calculating SPM values for all questions...');
         
         const exams = JSON.parse('{{ exams | tojson | safe }}');
         const allQuestionsFlat = JSON.parse('{{ all_questions_flat | tojson | safe }}');
         const studentCount = parseInt('{{ student_count }}');
         
-        // Global SPM storage'ı temizle
-        globalSPMValues = {};
+                 // Clear global SPM storage
+         globalSPMValues = {};
         
-        // Her soru için SPM hesapla
-        allQuestionsFlat.forEach((question, index) => {
+                 // Calculate SPM for each question
+         allQuestionsFlat.forEach((question, index) => {
             const globalQIdx = question.global_question_idx;
             const examIdx = question.exam_idx;
             const questionIdxInExam = question.question_idx_in_exam;
@@ -869,8 +913,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Processing Q${questionIdxInExam + 1} from Exam ${examIdx + 1} (GlobalIdx: ${globalQIdx}, MaxPoints: ${maxPoints})`);
             
-            // Öğrenci notlarını topla
-            const gradesForQuestion = [];
+                         // Collect student grades
+             const gradesForQuestion = [];
             for (let studentIdx = 0; studentIdx < studentCount; studentIdx++) {
                 const gradeInput = document.querySelector(`input[name="grade_${studentIdx}_${globalQIdx}"]`);
                 if (gradeInput && gradeInput.value.trim() !== '') {
@@ -883,8 +927,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Grades for Q${questionIdxInExam + 1}:`, gradesForQuestion);
             
-            // SPM hesapla
-            let spmValue = 0;
+                         // Calculate SPM
+             let spmValue = 0;
             if (gradesForQuestion.length > 0 && maxPoints > 0) {
                 const sortedGrades = [...gradesForQuestion].sort((a, b) => a - b);
                 let median;
@@ -900,24 +944,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`No grades found for Q${questionIdxInExam + 1} or maxPoints is 0`);
             }
             
-            // Global storage'a kaydet
-            globalSPMValues[globalQIdx] = spmValue;
+                         // Save to global storage
+             globalSPMValues[globalQIdx] = spmValue;
             console.log(`Saved SPM for Q${questionIdxInExam + 1} (GlobalIdx: ${globalQIdx}): ${spmValue.toFixed(2)}%`);
         });
         
         console.log('Final Global SPM values:', globalSPMValues);
         
-        // Bloom modal açıksa tabloyu güncelle
-        const bloomModal = document.getElementById('bloomModal');
-        if (bloomModal && bloomModal.style.display === 'block') {
-            console.log('Bloom modal is open, updating table...');
-            updateBloomMappingTable();
-        }
+                 // Update table if Bloom modal is open
+         const bloomModal = document.getElementById('bloomModal');
+         if (bloomModal && bloomModal.style.display === 'block') {
+             console.log('Bloom modal is open, updating table...');
+             updateBloomMappingTable();
+         }
     }
     
-    // Bloom mapping tablosunu güncelle
-    function updateBloomMappingTable() {
-        console.log('Bloom mapping tablosu güncelleniyor...');
+         // Update Bloom mapping table
+     function updateBloomMappingTable() {
+         console.log('Updating Bloom mapping table...');
         
         const exams = JSON.parse('{{ exams | tojson | safe }}');
         const questionPoints = JSON.parse('{{ question_points_nested | tojson | safe }}');
@@ -932,13 +976,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const examIdx = question.exam_idx;
                 const questionIdxInExam = question.question_idx_in_exam;
                 
-                // Bu CLO bu soruya ait mi kontrol et
+                // Check if this CLO belongs to this question
                 let isCLOSelected = false;
                 let qctValue = 0;
                 let wValue = 0;
                 let blValue = 0;
                 
-                // Question points'ten bu soru için CLO bilgilerini bul
+                // Find CLO information for this question from question points
                 if (questionPoints && questionPoints[examIdx]) {
                     for (let qp of questionPoints[examIdx]) {
                         if (qp.question_idx === questionIdxInExam && qp.clo === clo) {
@@ -951,17 +995,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                // Input alanlarını bul
+                // Find input fields
                 const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
                 const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
                 const spmInput = document.querySelector(`input[name="spm_${cloIdx}_${globalQIdx}"]`);
                 const blInput = document.querySelector(`input[name="bl_${cloIdx}_${globalQIdx}"]`);
                 
                 if (isCLOSelected) {
-                    // SPM değerini global storage'dan al
+                    // Get SPM value from global storage
                     let spmValue = globalSPMValues[globalQIdx] || 0;
                     
-                    // Input alanlarını güncelle
+                    // Update input fields
                     if (qctInput) {
                         qctInput.value = qctValue.toFixed(2);
                         qctInput.style.backgroundColor = '#fff3cd';
@@ -985,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     console.log(`Updated CLO ${cloIdx + 1}, Q${questionIdxInExam + 1}: QCT=${qctValue.toFixed(2)}, W=${wValue.toFixed(3)}, SPM=${spmValue.toFixed(2)}, BL=${blValue.toFixed(1)}`);
                 } else {
-                    // CLO seçili değilse alanları temizle
+                    // Clear fields if CLO is not selected
                     if (qctInput) {
                         qctInput.value = '';
                         qctInput.style.backgroundColor = '#f8f9fa';
@@ -1010,26 +1054,26 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // CLO Score tablosunu da güncelle
+        // Also update CLO Score table
         updateCLOScoreTable();
     }
     
-    // Otomatik hesaplama fonksiyonu
+    // Automatic calculation function
     function autoCalculateBloomMapping() {
-        console.log('Bloom Mapping otomatik hesaplanıyor...');
+        console.log('Automatically calculating Bloom Mapping...');
         
-        // Önce tüm sorular için SPM değerlerini hesapla
+        // First calculate SPM values for all questions
         calculateAllSPMValues();
         
-        // Sonra Bloom mapping tablosunu güncelle
+        // Then update Bloom mapping table
         updateBloomMappingTable();
         
-        console.log('Bloom Mapping otomatik hesaplama tamamlandı!');
+        console.log('Bloom Mapping automatic calculation completed!');
     }
     
-    // CLO Score tablosunu hesapla ve güncelle
+    // Calculate and update CLO Score table
     function updateCLOScoreTable() {
-        console.log('CLO Score tablosu güncelleniyor...');
+        console.log('Updating CLO Score table...');
         
         const clos = JSON.parse('{{ clos | tojson | safe }}');
         const questionPoints = JSON.parse('{{ question_points_nested | tojson | safe }}');
@@ -1041,13 +1085,13 @@ document.addEventListener('DOMContentLoaded', function() {
             let spmList = [];
             let blList = [];
             
-            // Bu CLO için tüm değerleri topla
+            // Collect all values for this CLO
             allQuestionsFlat.forEach((question) => {
                 const globalQIdx = question.global_question_idx;
                 const examIdx = question.exam_idx;
                 const questionIdxInExam = question.question_idx_in_exam;
                 
-                // Bu CLO bu soruya ait mi kontrol et
+                // Check if this CLO belongs to this question
                 let isCLOSelected = false;
                 if (questionPoints && questionPoints[examIdx]) {
                     for (let qp of questionPoints[examIdx]) {
@@ -1059,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (isCLOSelected) {
-                    // QCT, W, SPM, BL değerlerini al
+                    // Get QCT, W, SPM, BL values
                     const qctInput = document.querySelector(`input[name="qct_${cloIdx}_${globalQIdx}"]`);
                     const wInput = document.querySelector(`input[name="w_${cloIdx}_${globalQIdx}"]`);
                     const spmInput = document.querySelector(`input[name="spm_${cloIdx}_${globalQIdx}"]`);
@@ -1072,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // CLO Score hesaplamaları
+            // CLO Score calculations
             let maxCLOScore = 0;
             let weightedCLOScore = 0;
             let normalizedCLOScore = 0;
@@ -1108,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                console.log(`CLO ${cloIdx + 1} hesaplamaları:`);
+                console.log(`CLO ${cloIdx + 1} calculations:`);
                 console.log(`- QCT List:`, qctList);
                 console.log(`- W List:`, wList);
                 console.log(`- SPM List:`, spmList);
@@ -1119,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`- Weighted BL Sum: ${weightedBloomSum.toFixed(2)}`);
             }
             
-            // CLO Score tablosunu güncelle - ID'ler ile
+            // Update CLO Score table - with IDs
             const maxCLOCell = document.getElementById(`max_clo_${cloIdx}`);
             const weightedCLOCell = document.getElementById(`weighted_clo_${cloIdx}`);
             const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
@@ -1133,10 +1177,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log(`CLO ${cloIdx + 1}: Max=${maxCLOScore.toFixed(3)}, Weighted=${weightedCLOScore.toFixed(3)}, AvgBL=${averageBloomScore.toFixed(3)}, WeightedBLSum=${weightedBloomSum.toFixed(2)}`);
         });
         
-        // TOTAL satırını güncelle
+        // Update TOTAL row
         updateTotalRow();
         
-        console.log('CLO Score tablosu güncellendi!');
+        console.log('CLO Score table updated!');
     }
     
          // TOTAL satırını güncelle
@@ -1160,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function() {
              if (weightedBLSumCell && weightedBLSumCell.textContent) totalWeightedBLSum += parseFloat(weightedBLSumCell.textContent);
          });
          
-         // TOTAL satırındaki hücreleri güncelle - ID'ler ile
+         // Update cells in TOTAL row - with IDs
          const totalMaxCLOCell = document.getElementById('total_max_clo');
          const totalWeightedCLOCell = document.getElementById('total_weighted_clo');
          const totalAverageBLCell = document.getElementById('total_avg_bloom');
@@ -1174,26 +1218,26 @@ document.addEventListener('DOMContentLoaded', function() {
          console.log(`TOTAL: Max=${totalMaxCLO.toFixed(3)}, Weighted=${totalWeightedCLO.toFixed(3)}, AvgBL=${totalAverageBL.toFixed(3)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
      }
 
-    // Sayfa yüklendiğinde otomatik hesaplama yap
-    document.addEventListener('DOMContentLoaded', function() {
-        // Bloom modal açıldığında otomatik hesaplama yap
-        const bloomModalBtn = document.getElementById('bloomModalBtn');
+             // Perform automatic calculation when page loads
+         document.addEventListener('DOMContentLoaded', function() {
+             // Perform automatic calculation when Bloom modal opens
+             const bloomModalBtn = document.getElementById('bloomModalBtn');
         if (bloomModalBtn) {
             bloomModalBtn.addEventListener('click', function() {
-                console.log('Bloom Modal butonu tıklandı');
-                // Modal açıldıktan sonra hesaplama yap
+                                 console.log('Bloom Modal button clicked');
+                 // Perform calculation after modal opens
                 setTimeout(autoCalculateBloomMapping, 200);
             });
         }
         
-        // Sayfa yüklendiğinde de otomatik hesaplama yap (eğer modal zaten açıksa)
-        setTimeout(() => {
-            const bloomModal = document.getElementById('bloomModal');
-            if (bloomModal && bloomModal.style.display === 'block') {
-                console.log('Sayfa yüklendi, modal açık, otomatik hesaplama yapılıyor...');
-                autoCalculateBloomMapping();
-            }
-        }, 1000);
+                 // Also perform automatic calculation when page loads (if modal is already open)
+         setTimeout(() => {
+             const bloomModal = document.getElementById('bloomModal');
+             if (bloomModal && bloomModal.style.display === 'block') {
+                 console.log('Page loaded, modal is open, performing automatic calculation...');
+                 autoCalculateBloomMapping();
+             }
+         }, 1000);
     });
 
     setTimeout(recalcCurrentTabStats, 100);
@@ -1218,10 +1262,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const studentName = row.querySelector('input[name^="student_name_"]').value;
                 const grades = [];
                 
-                // Get grades for this exam
-                const gradeInputs = row.querySelectorAll('input[name^="grade_"]');
-                gradeInputs.forEach(input => {
-                    const grade = parseFloat(input.value) || 0;
+                // Get grades for this exam - use global question indices
+                const currentExamQuestions = allQuestionsFlat.filter(q => q.exam_idx === parseInt(examIdx));
+                currentExamQuestions.forEach(question => {
+                    const gradeInput = row.querySelector(`input[name="grade_${studentIdx}_${question.global_question_idx}"]`);
+                    const grade = gradeInput ? (parseFloat(gradeInput.value) || 0) : 0;
                     grades.push(grade);
                 });
                 
@@ -1244,62 +1289,24 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    statusDiv.innerHTML = '✅ Veriler başarıyla kaydedildi!';
+                    statusDiv.innerHTML = '✅ Data saved successfully!';
                     statusDiv.style.color = '#28a745';
                     setTimeout(() => {
                         statusDiv.innerHTML = '';
                     }, 3000);
                 } else {
-                    statusDiv.innerHTML = '❌ Kaydetme hatası: ' + data.error;
+                    statusDiv.innerHTML = '❌ Save error: ' + data.error;
                     statusDiv.style.color = '#dc3545';
                 }
             })
             .catch(error => {
-                statusDiv.innerHTML = '❌ Bağlantı hatası!';
+                statusDiv.innerHTML = '❌ Connection error!';
                 statusDiv.style.color = '#dc3545';
             });
         });
     });
     
-    // Save functionality for Bloom Mapping
-    document.getElementById('saveBloomMappingBtn').addEventListener('click', function() {
-        const statusDiv = document.getElementById('bloomSaveStatus');
-        const form = document.getElementById('bloomForm');
-        
-        // Get all form data
-        const formData = new FormData(form);
-        const bloomData = {};
-        
-        for (let [key, value] of formData.entries()) {
-            bloomData[key] = value;
-        }
-        
-        // Save to database via AJAX
-        fetch('/save_bloom_mapping', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(bloomData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                statusDiv.innerHTML = '✅ Bloom Mapping verileri başarıyla kaydedildi!';
-                statusDiv.style.color = '#28a745';
-                setTimeout(() => {
-                    statusDiv.innerHTML = '';
-                }, 3000);
-            } else {
-                statusDiv.innerHTML = '❌ Kaydetme hatası: ' + data.error;
-                statusDiv.style.color = '#dc3545';
-            }
-        })
-        .catch(error => {
-            statusDiv.innerHTML = '❌ Bağlantı hatası!';
-            statusDiv.style.color = '#dc3545';
-        });
-    });
+
 });
 </script>
 </body>
