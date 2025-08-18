@@ -1285,50 +1285,78 @@ def download_all_tables():
     if not exams or not students:
         return "Gerekli veriler bulunamadı.", 404
     
-    # 1. Öğrenci Notları Tablosu
-    student_grades_data = []
+    # Tüm tabloları alt alta birleştirmek için liste oluştur
+    all_rows = []
+    
+    # 1. Student Grades Table
+    all_rows.append([])  # Boş satır
+    all_rows.append(['STUDENT GRADES TABLE'])
+    all_rows.append([])  # Boş satır
+    
+    # Öğrenci notları başlıkları
+    student_headers = ['Student No', 'Name']
+    for exam_idx, exam in enumerate(exams):
+        for question in all_questions_flat:
+            if question['exam_idx'] == exam_idx:
+                question_name = f"{exam.name}_Q{question['question_idx_in_exam'] + 1}"
+                student_headers.append(question_name)
+        student_headers.append(f"{exam.name}_Total")
+    student_headers.append('Overall Total')
+    all_rows.append(student_headers)
+    
+    # Öğrenci notları verileri
     for student in students:
-        row = {
-            'Student No': student.get('number', ''),
-            'Name': student.get('name', ''),
-        }
+        row = [
+            student.get('number', ''),
+            student.get('name', ''),
+        ]
         
         # Her sınav için soru notları
         for exam_idx, exam in enumerate(exams):
             for question in all_questions_flat:
                 if question['exam_idx'] == exam_idx:
-                    question_name = f"{exam.name}_Q{question['question_idx_in_exam'] + 1}"
                     grade = student['grades'][question['global_question_idx']] if question['global_question_idx'] < len(student['grades']) else 0
-                    row[question_name] = grade
+                    row.append(grade)
             
             # Sınav toplamı
             exam_total = student.get('exam_totals', [])[exam_idx] if exam_idx < len(student.get('exam_totals', [])) else 0
-            row[f"{exam.name}_Total"] = exam_total
+            row.append(exam_total)
         
         # Genel toplam
-        row['Overall Total'] = student.get('overall_total', 0)
-        student_grades_data.append(row)
+        row.append(student.get('overall_total', 0))
+        all_rows.append(row)
     
-    # 2. İstatistikler Tablosu
-    stats_data = []
-    for exam_idx, exam in enumerate(exams):
-        for question in all_questions_flat:
-            if question['exam_idx'] == exam_idx:
-                stat = stats[question['global_question_idx']] if question['global_question_idx'] < len(stats) else {}
-                row = {
-                    'Exam': exam.name,
-                    'Question': f"Q{question['question_idx_in_exam'] + 1}",
-                    'Max Points': question['max_points'],
-                    'Average': stat.get('avg', 0),
-                    'Median': stat.get('median', 0),
-                    'Max': stat.get('max', 0),
-                    'Min': stat.get('min', 0),
-                    'Performance Median (%)': stat.get('performance_median', 0)
-                }
-                stats_data.append(row)
+    # 2. CLO Performance Values Table
+    all_rows.append([])  # Boş satır
+    all_rows.append(['CLO PERFORMANCE VALUES TABLE'])
+    all_rows.append([])  # Boş satır
     
-    # 3. CLO Analiz Sonuçları
-    clo_analysis_data = []
+    # CLO Performance Values başlıkları
+    clo_performance_headers = ['CLO', 'Max CLO Score', 'CLO Score', 'MW-BL', 'Weighted BL Sum']
+    all_rows.append(clo_performance_headers)
+    
+    # CLO Performance Values verileri
+    for clo_idx in range(len(clo_results)):
+        clo_result = clo_results[clo_idx]
+        row = [
+            clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
+            f"{clo_result.get('max_clo_score', 0):.3f}",
+            f"{clo_result.get('weighted_clo_score', 0):.3f}",
+            f"{clo_result.get('average_bloom_score', 0):.3f}",
+            f"{clo_result.get('weighted_bloom_score', 0):.2f}"
+        ]
+        all_rows.append(row)
+    
+    # 3. CLO Analysis Results
+    all_rows.append([])  # Boş satır
+    all_rows.append(['CLO ANALYSIS RESULTS TABLE'])
+    all_rows.append([])  # Boş satır
+    
+    # CLO Analiz başlıkları
+    clo_headers = ['CLO', 'Normalized CLO %', 'Average Bloom Level-CLO', 'Student Performance Assessment', 'Recommended Instructor Action']
+    all_rows.append(clo_headers)
+    
+    # CLO Analiz verileri
     for clo_idx in range(len(clo_results)):
         # Normalized CLO değerini doğrudan clo_results'dan al
         normalized_clo = clo_results[clo_idx].get('normalized_clo_score', 0)
@@ -1375,37 +1403,37 @@ def download_all_tables():
             performance_text = "No data available for assessment"
             recommendation_text = "Please ensure all data is properly entered"
         
-        clo_analysis_data.append({
-            'CLO': clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            'Normalized CLO %': f"{normalized_clo:.2f}%",
-            'Average Bloom Level-CLO': f"{avg_bloom_level:.2f}",
-            'Student Performance Assessment': performance_text,
-            'Recommended Instructor Action': recommendation_text
-        })
+        row = [
+            clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
+            f"{normalized_clo:.2f}%",
+            f"{avg_bloom_level:.2f}",
+            performance_text,
+            recommendation_text
+        ]
+        all_rows.append(row)
     
-    # Tüm verileri birleştir
-    all_data = {
-        'Student Grades': student_grades_data,
-        'Statistics': stats_data,
-        'CLO Analysis': clo_analysis_data
-    }
+    # CSV dosyası oluştur
+    output = io.StringIO()
+    for row in all_rows:
+        # Her satırı CSV formatında yaz
+        csv_row = []
+        for cell in row:
+            if isinstance(cell, str):
+                # String değerleri tırnak içine al ve virgülleri escape et
+                csv_row.append(f'"{cell.replace('"', '""')}"')
+            else:
+                csv_row.append(str(cell))
+        output.write(';'.join(csv_row) + '\n')
     
-    # Excel dosyası oluştur (birden fazla sheet ile)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Her tablo için ayrı sheet
-        for sheet_name, data in all_data.items():
-            if data:  # Boş değilse
-                df = pd.DataFrame(data)
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-    
-    output.seek(0)
+    # BOM ekle (Türkçe karakterler için)
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
     
     # Response oluştur
-    response = make_response(output.getvalue())
+    response = make_response(csv_output)
     course_code = course.course_code
-    response.headers["Content-Disposition"] = f"attachment; filename={course_code}_all_tables.xlsx"
-    response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    response.headers["Content-Disposition"] = f"attachment; filename={course_code}_all_tables.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
     
     return response
 
