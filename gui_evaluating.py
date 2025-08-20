@@ -1075,6 +1075,97 @@ def summary():
             exam_total_stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
 
     session["question_performance_medians"] = question_performance_medians
+    
+    # CLO hesaplamalarını her zaman yeniden yap (öğrenci notları güncellendiğinde)
+    clo_count = session.get("clo_count", 10)
+    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
+    
+    # Create all_questions_flat_map for bloom mapping
+    all_questions_flat_map = []
+    global_q_idx_counter = 0
+    for exam_idx, exam in enumerate(exams):
+        exam_map = []
+        for q_idx_in_exam in range(int(exam['question_count'])):
+            exam_map.append(global_q_idx_counter)
+            global_q_idx_counter += 1
+        all_questions_flat_map.append(exam_map)
+    
+    # CLO hesaplamalarını yap
+    clo_results = []
+    for clo_idx in range(1, clo_count+1):
+        qct_list, w_list, spm_list, bl_list = [], [], [], []
+        
+        # Scan all questions for this CLO
+        for exam_idx, exam in enumerate(exams):
+            for q in range(exam["question_count"]):
+                global_q_idx = all_questions_flat_map[exam_idx][q]
+                
+                # Bu CLO için bu sorunun verilerini question_points'den al
+                q_clo_records = [
+                    rec for rec in question_points[exam_idx]
+                    if rec['clo'] == clo_idx and rec.get('question_idx', q) == q
+                ]
+                
+                if q_clo_records:
+                    rec = q_clo_records[0]
+                    qct = rec.get('qct', 0.0)
+                    w = rec.get('w', 0.0)
+                    bl = rec.get('bl', 0.0)
+                    
+                    # Calculate SPM value - from student grades (her zaman güncel öğrenci notlarından)
+                    spm = 0.0
+                    if students:
+                        grades_for_question = []
+                        for student in students:
+                            if (global_q_idx < len(student['grades']) and 
+                                student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                                try:
+                                    grade_val = float(student['grades'][global_q_idx])
+                                    if grade_val > 0:
+                                        grades_for_question.append(grade_val)
+                                except (ValueError, TypeError):
+                                    continue
+                        
+                        if grades_for_question:
+                            max_points = rec.get('points', 0)
+                            if max_points > 0:
+                                median_val = np.median(grades_for_question)
+                                spm = round((median_val / max_points) * 100, 2)
+                    
+                    # Sadece bu CLO'ya ait olan soruları ekle
+                    if qct > 0 and w > 0:
+                        qct_list.append(qct)
+                        w_list.append(w)
+                        spm_list.append(spm)
+                        bl_list.append(bl)
+        
+        # CLO Score hesaplamaları
+        max_clo = max_possible_clo_score(qct_list, w_list)
+        weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
+        normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+        weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
+        avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
+        
+        clo_results.append({
+            "max_clo_score": max_clo,
+            "weighted_clo_score": weighted_clo,
+            "normalized_clo_score": normalized_clo,
+            "weighted_bloom_score": weighted_bloom,
+            "average_bloom_score": avg_bloom
+        })
+    
+    total_clo_results = {
+        "total_max_clo_score": sum(r["max_clo_score"] for r in clo_results),
+        "total_weighted_clo_score": sum(r["weighted_clo_score"] for r in clo_results),
+        "total_normalized_clo_score": sum(r["normalized_clo_score"] for r in clo_results),
+        "total_average_bloom_score": sum(r["average_bloom_score"] for r in clo_results),
+        "total_weighted_bloom_score": sum(r["weighted_bloom_score"] for r in clo_results)
+    }
+    
+    # Session'a kaydet (her zaman güncel değerler)
+    session["clo_results"] = clo_results
+    session["total_clo_results"] = total_clo_results
+    
     return render_template(
         "summary.html", 
         exams=exams, 
