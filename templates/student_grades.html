@@ -270,7 +270,7 @@ input[readonly] {
             <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('course_code', 'N/A') }}</span>
         </div>
         <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Teacher:</span>
+                                    <span style="font-size: 0.85rem; color: #6c757d; font-weight: 500; margin-bottom: 2px;">Instructor:</span>
             <span style="font-size: 1rem; color: #2c3e50; font-weight: 600;">{{ session.get('teacher_name', 'N/A') }}</span>
         </div>
         <div style="display: flex; flex-direction: column;">
@@ -284,13 +284,13 @@ input[readonly] {
 <div id="bloomModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2>Bloom Level Mapping</h2>
+        <h2>CLOs – Questions Matrix</h2>
         
                  <!-- Automatic Calculation Information -->
          <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
              <strong>ℹ️ Information:</strong> All values (QCT, W, SPM, BL) are automatically calculated and entered. 
              QCT: (Question points × Exam percentage) ÷ 100 | W: 1 ÷ CLO count | SPM: Student performance median | BL: Bloom level
-             <br><strong>⚠️ Important:</strong> These fields are automatically calculated and cannot be modified!
+                           <br><strong>⚠️ Important:</strong> These fields are system-generated and cannot be modified manually.
          </div>
 
         <form method="post" id="bloomForm">
@@ -430,7 +430,7 @@ input[readonly] {
 
   {% for exam_idx, exam in enumerate(exams) %}
     <div id="exam-{{ exam_idx }}" class="tab-content {% if loop.first %}active{% endif %}">
-      <h3>{{ exam.name }} exam grade entry</h3>
+      <h3>Student Information and Grade Entry</h3>
       <table>
         <thead>
           <tr>
@@ -547,13 +547,7 @@ input[readonly] {
         </tfoot>
       </table>
       
-      <!-- Save Button for Each Exam -->
-      <div style="text-align: center; margin: 15px 0;">
-                 <button type="button" class="save-exam-btn" data-exam="{{ exam_idx }}" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-           💾 Save {{ exam.name }} Data
-         </button>
-        <div class="save-status" data-exam="{{ exam_idx }}" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
-      </div>
+      
     </div>
   {% endfor %}
 
@@ -1242,69 +1236,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(recalcCurrentTabStats, 100);
     
-    // Save functionality for each exam
-    document.querySelectorAll('.save-exam-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const examIdx = this.getAttribute('data-exam');
-            const statusDiv = document.querySelector(`.save-status[data-exam="${examIdx}"]`);
-            
-            // Get all student data for this exam
-            const examData = {
-                exam_idx: parseInt(examIdx),
-                students: []
-            };
-            
-            const currentTab = document.getElementById(`exam-${examIdx}`);
-            const studentRows = currentTab.querySelectorAll('.student-row');
-            
-            studentRows.forEach((row, studentIdx) => {
-                const studentNumber = row.querySelector('input[name^="student_number_"]').value;
-                const studentName = row.querySelector('input[name^="student_name_"]').value;
-                const grades = [];
-                
-                // Get grades for this exam - use global question indices
-                const currentExamQuestions = allQuestionsFlat.filter(q => q.exam_idx === parseInt(examIdx));
-                currentExamQuestions.forEach(question => {
-                    const gradeInput = row.querySelector(`input[name="grade_${studentIdx}_${question.global_question_idx}"]`);
-                    const grade = gradeInput ? (parseFloat(gradeInput.value) || 0) : 0;
-                    grades.push(grade);
-                });
-                
-                examData.students.push({
-                    student_idx: studentIdx,
-                    number: studentNumber,
-                    name: studentName,
-                    grades: grades
-                });
-            });
-            
-            // Save to database via AJAX
-            fetch('/save_exam_data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(examData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusDiv.innerHTML = '✅ Data saved successfully!';
-                    statusDiv.style.color = '#28a745';
-                    setTimeout(() => {
-                        statusDiv.innerHTML = '';
-                    }, 3000);
-                } else {
-                    statusDiv.innerHTML = '❌ Save error: ' + data.error;
-                    statusDiv.style.color = '#dc3545';
-                }
-            })
-            .catch(error => {
-                statusDiv.innerHTML = '❌ Connection error!';
-                statusDiv.style.color = '#dc3545';
-            });
-        });
-    });
+    
     
 
 });

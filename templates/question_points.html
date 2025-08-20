@@ -97,13 +97,13 @@
         }
 
         .info-section {
-            background: rgba(209, 236, 241, 0.8);
-            border: 1px solid rgba(190, 229, 235, 0.8);
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(52, 152, 219, 0.4);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 20px;
             text-align: center;
-            color: #0c5460;
+            color: #2980b9;
         }
 
         .exam-section {
@@ -293,8 +293,9 @@
         <div class="header-content">
             <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
             <div class="header-text">
-                <h1>Exam Evaluation System</h1>
-                <p>Faculty of Civil and Environmental Engineering</p>
+                <h1>CLOSPAS</h1>
+                <p>Course Learning Outcomes and Student Performance Assessment System</p>
+                <p style="font-size: 0.9rem; color: #95a5a6; font-weight: 400; font-style: italic; margin-top: 0.3rem;">Faculty of Civil and Environmental Engineering</p>
                 
                 <!-- Course Information Display -->
                 <div class="course-info">
@@ -304,7 +305,7 @@
                             <strong>Course Code:</strong> {{ session.get('course_code', 'N/A') }}
                         </div>
                         <div>
-                            <strong>Teacher:</strong> {{ session.get('teacher_name', 'N/A') }}
+                            <strong>Instructor:</strong> {{ session.get('teacher_name', 'N/A') }}
                         </div>
                         <div>
                             <strong>Semester:</strong> {{ session.get('semester', 'N/A') }}
@@ -368,7 +369,7 @@
                             </div>
                             
                             <div class="warning-text">
-                                <strong>⚠️ Important:</strong> Total points for {{ exam['name'] }} must equal 100.
+                                <strong>⚠️ Important:</strong> The total points assigned for the {{ exam['name'] }} must equal 100.
                             </div>
                         </div>
                     {% endfor %}
@@ -424,7 +425,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>© 2024 Faculty of Civil and Environmental Engineering - Exam Evaluation System</p>
+        <p>© 2024 Faculty of Civil and Environmental Engineering - CLOSPAS</p>
     </footer>
 
     <script>
