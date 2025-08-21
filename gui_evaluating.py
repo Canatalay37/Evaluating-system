@@ -1870,6 +1870,7 @@ def restore_database(filename):
         return f"❌ Geri yükleme hatası: {str(e)}"
 
 if __name__ == "__main__":
+    # GitHub Actions test - Docker otomatik build için
     app.run(host='0.0.0.0', port=8080, debug=True)
     
     
