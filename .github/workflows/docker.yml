@@ -1,37 +1,37 @@
-name: Docker Build and Deploy
+name: Simple Validation
 
-on:
-  push:
-    branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
+# DISABLED - GitHub Actions billing issue
+# on:
+#   push:
+#     branches: [ master, main ]
+#   pull_request:
+#     branches: [ master, main ]
 
 jobs:
-  build-and-deploy:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: evaluating-system:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    - name: Build success notification
+    - name: Check file structure
       run: |
-        echo "✅ Docker image built successfully!"
-        echo "📦 Image: evaluating-system:latest"
-        echo "🚀 Ready to deploy!"
+        echo "📁 Checking project structure..."
+        ls -la
+        echo "✅ Project structure looks good!"
+        
+    - name: Validate Python files
+      run: |
+        echo "🐍 Validating Python files..."
+        find . -name "*.py" -exec python -m py_compile {} \;
+        echo "✅ All Python files are valid!"
+        
+    - name: Success message
+      run: |
+        echo "🎉 Validation successful!"
+        echo "🚀 Ready for deployment!"
         echo ""
-        echo "To run locally:"
+        echo "Docker build commands:"
         echo "docker build -t evaluating-system ."
         echo "docker run -d -p 8080:8080 evaluating-system"

@@ -1,37 +1,39 @@
-name: Docker Build
+name: Code Validation
 
-on:
-  push:
-    branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
+# DISABLED - GitHub Actions billing issue
+# on:
+#   push:
+#     branches: [ master, main ]
+#   pull_request:
+#     branches: [ master, main ]
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build Docker image
-      uses: docker/build-push-action@v5
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        context: .
-        push: false
-        tags: evaluating-system:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        python-version: '3.9'
         
-    - name: Build success notification
+    - name: Install dependencies
       run: |
-        echo "✅ Docker image built successfully!"
-        echo "📦 Image: evaluating-system:latest"
-        echo "🚀 Ready to deploy!"
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Validate Python syntax
+      run: |
+        python -m py_compile gui_evaluating.py
+        echo "✅ Python syntax validation passed!"
+        
+    - name: Success notification
+      run: |
+        echo "🎉 Code validation successful!"
+        echo "📦 Ready for Docker build!"
         echo ""
-        echo "To run locally:"
+        echo "To build Docker image locally:"
         echo "docker build -t evaluating-system ."
-        echo "docker run -d -p 8080:8080 evaluating-system"
