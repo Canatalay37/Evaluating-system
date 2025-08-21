@@ -509,6 +509,13 @@ def student_grades():
                     except ValueError:
                         grade_value = 0.0 
                     
+                    # Not validasyonu - maksimum puanı aşmayı engelle
+                    max_points = q_flat['max_points']
+                    if grade_value > max_points:
+                        grade_value = max_points
+                    elif grade_value < 0:
+                        grade_value = 0
+                    
                     student_grades_list[q_flat['global_question_idx']] = grade_value
                     current_student_total_score += grade_value
 
@@ -525,6 +532,13 @@ def student_grades():
                 for q_idx, grade_value in enumerate(student_grades_list):
                     if q_idx < len(all_questions_flat_for_jinja):
                         question_global_idx = all_questions_flat_for_jinja[q_idx]['global_question_idx']
+                        
+                        # Son kez validasyon kontrolü
+                        max_points = all_questions_flat_for_jinja[q_idx]['max_points']
+                        if grade_value > max_points:
+                            grade_value = max_points
+                        elif grade_value < 0:
+                            grade_value = 0
                         
                         # Grade'ı veritabanına kaydet/güncelle
                         existing_grade = Grade.query.filter_by(student_id=student.id, question_id=question_global_idx).first()
@@ -1655,6 +1669,12 @@ def save_exam_data():
                     # Bu grade_idx'e karşılık gelen question'ı bul
                     question = Question.query.filter_by(exam_id=exam.id, question_idx=grade_idx).first()
                     if question:
+                        # Not validasyonu - maksimum puanı aşmayı engelle
+                        if grade_value > question.max_points:
+                            grade_value = question.max_points
+                        elif grade_value < 0:
+                            grade_value = 0
+                        
                         # Mevcut notu bul veya yeni oluştur
                         existing_grade = Grade.query.filter_by(student_id=student.id, question_id=question.id).first()
                         if existing_grade:
