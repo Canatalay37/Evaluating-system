@@ -1,25 +1,15 @@
-# Use Ubuntu base image (more commonly available)
-FROM ubuntu:20.04
+# Use Python 3.9 (should be available without auth)
+FROM python:3.9-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install Python and pip
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apk add --no-cache gcc g++ musl-dev
 
-# Create symlink for python
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-# Copy requirements first for better caching
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
@@ -35,4 +25,4 @@ ENV FLASK_APP=gui_evaluating.py
 ENV FLASK_ENV=production
 
 # Run the application
-CMD ["python3", "gui_evaluating.py"]
+CMD ["python", "gui_evaluating.py"]

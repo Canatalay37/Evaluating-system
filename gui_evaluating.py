@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
-import pandas as pd
+# import pandas as pd  # Removed for Docker compatibility
 import numpy as np
 import io
 import openpyxl 
@@ -78,9 +78,9 @@ class Grade(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
     grade = db.Column(db.Float, nullable=False)
 
-# Create database
-with app.app_context():
-    db.create_all()
+# Create database (commented out for Docker compatibility)
+# with app.app_context():
+#     db.create_all()
 
 # ROUTES
 @app.route("/", methods=["GET", "POST"])
@@ -1235,10 +1235,24 @@ def download_csv(exam_index):
         student_row[f"{exam_name} Toplam"] = total_grade_for_exam
         exam_data.append(student_row)
 
-    df = pd.DataFrame(exam_data)
-
+    # Manual CSV creation instead of pandas
     output = io.StringIO()
-    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    if exam_data:
+        # Header
+        headers = list(exam_data[0].keys())
+        output.write(';'.join(headers) + '\n')
+        
+        # Data rows
+        for row in exam_data:
+            csv_row = []
+            for header in headers:
+                cell = row.get(header, '')
+                if isinstance(cell, str):
+                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
+                else:
+                    csv_row.append(str(cell))
+            output.write(';'.join(csv_row) + '\n')
+    
     bom = '\ufeff'
     csv_output = bom + output.getvalue()
 
@@ -1270,13 +1284,24 @@ def download_clo_csv():
     if not clo_table:
         return "CLO verisi bulunamadı.", 404
         
-    df = pd.DataFrame(clo_table)
-    # 'id' sütununu çıkararak daha temiz bir tablo oluşturun
-    if 'id' in df.columns:
-        df = df.drop(columns=['id'])
-
+    # Manual CSV creation instead of pandas
     output = io.StringIO()
-    df.to_csv(output, index=False, sep=';', encoding='utf-8', float_format='%.3f')
+    if clo_table:
+        # Header (without 'id')
+        headers = ['name', 'order']
+        output.write(';'.join(headers) + '\n')
+        
+        # Data rows
+        for row in clo_table:
+            csv_row = []
+            for header in headers:
+                cell = row.get(header, '')
+                if isinstance(cell, str):
+                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
+                else:
+                    csv_row.append(str(cell))
+            output.write(';'.join(csv_row) + '\n')
+    
     bom = '\ufeff'
     csv_output = bom + output.getvalue()
 
@@ -1360,10 +1385,24 @@ def download_clo_analysis_csv():
             'Recommended Instructor Action': recommendation_text
         })
     
-    df = pd.DataFrame(analysis_data)
-
+    # Manual CSV creation instead of pandas
     output = io.StringIO()
-    df.to_csv(output, index=False, sep=';', encoding='utf-8')
+    if analysis_data:
+        # Header
+        headers = list(analysis_data[0].keys())
+        output.write(';'.join(headers) + '\n')
+        
+        # Data rows
+        for row in analysis_data:
+            csv_row = []
+            for header in headers:
+                cell = row.get(header, '')
+                if isinstance(cell, str):
+                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
+                else:
+                    csv_row.append(str(cell))
+            output.write(';'.join(csv_row) + '\n')
+    
     bom = '\ufeff'
     csv_output = bom + output.getvalue()
 
@@ -1531,7 +1570,7 @@ def download_all_tables():
         for cell in row:
             if isinstance(cell, str):
                 # String değerleri tırnak içine al ve virgülleri escape et
-                csv_row.append(f'"{cell.replace('"', '""')}"')
+                csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
             else:
                 csv_row.append(str(cell))
         output.write(';'.join(csv_row) + '\n')
@@ -1547,6 +1586,36 @@ def download_all_tables():
     response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
     
     return response
+
+# MANUAL CALCULATION FUNCTIONS (numpy replacement)
+def manual_mean(values):
+    """Manuel ortalama hesaplama"""
+    if not values:
+        return 0
+    return sum(values) / len(values)
+
+def manual_median(values):
+    """Manuel medyan hesaplama"""
+    if not values:
+        return 0
+    sorted_values = sorted(values)
+    n = len(sorted_values)
+    if n % 2 == 0:
+        return (sorted_values[n//2 - 1] + sorted_values[n//2]) / 2
+    else:
+        return sorted_values[n//2]
+
+def manual_max(values):
+    """Manuel maksimum hesaplama"""
+    if not values:
+        return 0
+    return max(values)
+
+def manual_min(values):
+    """Manuel minimum hesaplama"""
+    if not values:
+        return 0
+    return min(values)
 
 # CALCULATION FUNCTIONS
 def max_possible_clo_score(qct_list, w_list):
@@ -1801,7 +1870,7 @@ def restore_database(filename):
         return f"❌ Geri yükleme hatası: {str(e)}"
 
 if __name__ == "__main__":
-    app.run(port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
     
     
     

@@ -1,0 +1,9 @@
+@echo off
+echo Starting Evaluating System...
+echo.
+echo Installing dependencies...
+pip install -r requirements.txt
+echo.
+echo Starting Flask application...
+python gui_evaluating.py
+pause
