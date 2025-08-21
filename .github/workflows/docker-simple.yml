@@ -1,0 +1,37 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        tags: evaluating-system:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Build success notification
+      run: |
+        echo "✅ Docker image built successfully!"
+        echo "📦 Image: evaluating-system:latest"
+        echo "🚀 Ready to deploy!"
+        echo ""
+        echo "To run locally:"
+        echo "docker build -t evaluating-system ."
+        echo "docker run -d -p 8080:8080 evaluating-system"
