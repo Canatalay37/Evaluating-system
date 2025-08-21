@@ -12,32 +12,26 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
       with:
         context: .
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/evaluating-system:latest
-          ${{ secrets.DOCKER_USERNAME }}/evaluating-system:${{ github.sha }}
+        push: false
+        tags: evaluating-system:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
-    - name: Deploy to server (optional)
+    - name: Build success notification
       run: |
-        echo "Docker image built successfully!"
-        echo "Image: ${{ secrets.DOCKER_USERNAME }}/evaluating-system:${{ github.sha }}"
-        echo "You can now pull and run:"
-        echo "docker pull ${{ secrets.DOCKER_USERNAME }}/evaluating-system:latest"
-        echo "docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/evaluating-system:latest"
+        echo "✅ Docker image built successfully!"
+        echo "📦 Image: evaluating-system:latest"
+        echo "🚀 Ready to deploy!"
+        echo ""
+        echo "To run locally:"
+        echo "docker build -t evaluating-system ."
+        echo "docker run -d -p 8080:8080 evaluating-system"
