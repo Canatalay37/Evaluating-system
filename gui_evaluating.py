@@ -343,7 +343,7 @@ def student_grades():
         print("=== DEBUG: No students data in session, checking database ===")
         # Session'da yoksa veritabanından al
         for student in students_db:
-            grades = [0.0] * len(all_questions_flat_for_jinja)
+            grades = [None] * len(all_questions_flat_for_jinja)
             # Veritabanından grades'ları al - doğru mapping ile
             for grade in student.grades:
                 # Question'ın exam_id ve question_idx'ini bul
@@ -372,7 +372,7 @@ def student_grades():
             students_data.append({
                 "number": "",
                 "name": "",
-                "grades": [0.0] * len(all_questions_flat_for_jinja),
+                "grades": [None] * len(all_questions_flat_for_jinja),
                 "total": 0.0
             })
         print(f"=== DEBUG: Creating empty students data: {len(students_data)} students ===")
@@ -499,25 +499,26 @@ def student_grades():
                 student_name = request.form.get(f"student_name_{student_idx}", "")
 
                 current_student_total_score = 0.0
-                student_grades_list = [0.0] * total_questions_count 
+                student_grades_list = [None] * total_questions_count 
 
                 for q_flat in all_questions_flat_for_jinja:
                     grade_key = f"grade_{student_idx}_{q_flat['global_question_idx']}"
-                    grade = request.form.get(grade_key, "0.0")
+                    grade = request.form.get(grade_key, "")
                     try:
-                        grade_value = float(grade)
+                        grade_value = float(grade) if grade.strip() != "" else None
                     except ValueError:
-                        grade_value = 0.0 
+                        grade_value = None 
                     
                     # Not validasyonu - maksimum puanı aşmayı engelle
                     max_points = q_flat['max_points']
-                    if grade_value > max_points:
+                    if grade_value is not None and grade_value > max_points:
                         grade_value = max_points
-                    elif grade_value < 0:
+                    elif grade_value is not None and grade_value < 0:
                         grade_value = 0
                     
                     student_grades_list[q_flat['global_question_idx']] = grade_value
-                    current_student_total_score += grade_value
+                    if grade_value is not None:
+                        current_student_total_score += grade_value
 
                 # Student'ı veritabanına kaydet/güncelle
                 student = Student.query.filter_by(course_id=course_id, number=student_number).first()
@@ -535,18 +536,23 @@ def student_grades():
                         
                         # Son kez validasyon kontrolü
                         max_points = all_questions_flat_for_jinja[q_idx]['max_points']
-                        if grade_value > max_points:
+                        if grade_value is not None and grade_value > max_points:
                             grade_value = max_points
-                        elif grade_value < 0:
+                        elif grade_value is not None and grade_value < 0:
                             grade_value = 0
                         
                         # Grade'ı veritabanına kaydet/güncelle
                         existing_grade = Grade.query.filter_by(student_id=student.id, question_id=question_global_idx).first()
-                        if existing_grade:
-                            existing_grade.grade = grade_value
+                        if grade_value is None:
+                            # Boş bırakılanları kaydetmeyelim; varsa silmeyelim, sadece atla
+                            if existing_grade:
+                                pass
                         else:
-                            new_grade = Grade(student_id=student.id, question_id=question_global_idx, grade=grade_value)
-                            db.session.add(new_grade)
+                            if existing_grade:
+                                existing_grade.grade = grade_value
+                            else:
+                                new_grade = Grade(student_id=student.id, question_id=question_global_idx, grade=grade_value)
+                                db.session.add(new_grade)
 
                 students.append({
                     "number": student_number,

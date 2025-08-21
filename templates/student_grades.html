@@ -517,10 +517,6 @@ input[readonly] {
               {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %} 
                 <td>
-                  {% set existing_val = 0 %}
-                  {% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx %}
-                    {% set existing_val = students_data[student_idx].grades[q_flat.global_question_idx] %}
-                  {% endif %}
                   <input type="number" 
                          class="grade-input" 
                          name="grade_{{ student_idx }}_{{ q_flat.global_question_idx }}" 
@@ -530,7 +526,7 @@ input[readonly] {
                          data-student="{{ student_idx }}" 
                          data-question="{{ q_flat.global_question_idx }}"
                          data-max-points="{{ q_flat.max_points }}"
-                         value="{{ existing_val }}"
+                         value="{% if students_data[student_idx] and students_data[student_idx].grades|length > q_flat.global_question_idx and students_data[student_idx].grades[q_flat.global_question_idx] is not none %}{{ students_data[student_idx].grades[q_flat.global_question_idx] }}{% endif %}"
                          placeholder="0 - {{ q_flat.max_points }}"
                          style="width:60px; border: 1px solid #ccc;"
                          oninput="validateGrade(this)"
@@ -639,6 +635,7 @@ function getColumnValues(globalColIdx) {
   for (let i = 0; i < studentCount; i++) {
     let inp = document.querySelector(`input[name='grade_${i}_${globalColIdx}']`);
     if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+      // 0 değeri de geçerli bir not olabilir
       vals.push(parseFloat(inp.value));
     }
   }
@@ -652,6 +649,7 @@ function getExamTotalValues(examIdx) {
         allQuestionsFlat.filter(q => q.exam_idx === examIdx).forEach(q => {
             let inp = document.querySelector(`input[name='grade_${studentIdx}_${q.global_question_idx}']`);
             if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+                // 0 değeri de geçerli bir not olabilir
                 total += parseFloat(inp.value);
             }
         });
@@ -728,6 +726,7 @@ function recalcCurrentTabStats() {
         currentExamQuestions.forEach(q => {
             let inp = document.querySelector(`input[name='grade_${i}_${q.global_question_idx}']`);
             if (inp && inp.value !== "" && !isNaN(parseFloat(inp.value))) {
+                // 0 değeri de geçerli bir not olabilir
                 total += parseFloat(inp.value);
             }
         });
@@ -845,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentExamQuestions = allQuestionsFlat.filter(q => q.exam_idx === parseInt(examIdx));
             currentExamQuestions.forEach(question => {
                 const gradeInput = row.querySelector(`input[name="grade_${studentIdx}_${question.global_question_idx}"]`);
-                const grade = gradeInput ? (parseFloat(gradeInput.value) || 0) : 0;
+                const grade = gradeInput && gradeInput.value.trim() !== '' ? parseFloat(gradeInput.value) : 0;
                 grades.push(grade);
             });
             
@@ -944,7 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const gradeInputs = document.querySelectorAll('.grade-input');
         let hasGrades = false;
         gradeInputs.forEach(input => {
-            if (input.value.trim() !== '' && parseFloat(input.value) > 0) {
+            if (input.value.trim() !== '' && parseFloat(input.value) >= 0) {
+                // 0 değeri de geçerli bir not olabilir
                 hasGrades = true;
             }
         });
@@ -992,6 +992,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (gradeInput && gradeInput.value.trim() !== '') {
                     const gradeValue = parseFloat(gradeInput.value.trim());
                     if (!isNaN(gradeValue) && gradeValue >= 0) {
+                        // 0 değeri de geçerli bir not olabilir
                         gradesForQuestion.push(gradeValue);
                     }
                 }
@@ -1408,7 +1409,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Negatif değer kontrolü
       if (currentValue < 0) {
-        input.value = 0;
+        input.value = '';
         showNotification('Not negatif olamaz!', 'error');
         return;
       }
@@ -1436,14 +1437,19 @@ document.addEventListener('DOMContentLoaded', function() {
       const currentValue = parseFloat(input.value);
       
       if (isNaN(currentValue)) {
-        input.value = 0;
-        input.classList.remove('warning', 'valid');
-        input.classList.add('error');
+        input.value = '';
+        input.classList.remove('warning', 'valid', 'error');
+        return;
+      }
+      
+      // 0 değeri geçerli bir not olabilir, sadece boş alanları temizle
+      if (currentValue === 0 && input.value.trim() === '') {
+        input.classList.remove('warning', 'valid', 'error');
         return;
       }
       
       if (currentValue < 0) {
-        input.value = 0;
+        input.value = '';
         input.classList.remove('warning', 'valid');
         input.classList.add('error');
         return;
