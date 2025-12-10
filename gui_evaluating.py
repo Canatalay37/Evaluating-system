@@ -40,6 +40,7 @@ class Exam(db.Model):
     questions = db.relationship('Question', backref='exam', lazy=True, cascade='all, delete-orphan')
 
 class CLO(db.Model):
+    __tablename__ = 'clo'
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -78,9 +79,6 @@ class Grade(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
     grade = db.Column(db.Float, nullable=False)
 
-# Create database (commented out for Docker compatibility)
-# with app.app_context():
-#     db.create_all()
 
 # ROUTES
 @app.route("/", methods=["GET", "POST"])
@@ -1870,7 +1868,10 @@ def restore_database(filename):
         return f"❌ Geri yükleme hatası: {str(e)}"
 
 if __name__ == "__main__":
-    # GitHub Actions test - Docker otomatik build için
+    # Create database tables if they don't exist
+    with app.app_context():
+        db.create_all()
+
     app.run(host='0.0.0.0', port=8080, debug=True)
     
     
