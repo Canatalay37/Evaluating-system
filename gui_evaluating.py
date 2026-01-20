@@ -15,6 +15,26 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evaluation_system.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+
+def format_csv_cell(cell):
+    if cell is None:
+        return ''
+    if isinstance(cell, str):
+        raw = cell.strip()
+        if raw and ('.' in raw or ',' in raw):
+            try:
+                normalized = raw.replace(',', '.')
+                numeric_value = float(normalized)
+                formatted = f"{numeric_value:.2f}".replace('.', ',')
+                return formatted
+            except ValueError:
+                pass
+        return f'"{cell.replace(chr(34), chr(34)+chr(34))}"'
+    if isinstance(cell, (int, float, np.integer, np.floating)):
+        formatted = f"{float(cell):.2f}".replace('.', ',')
+        return formatted
+    return str(cell)
+
 # Database Models
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -90,6 +110,11 @@ def main():
         semester = request.form["semester"]
         
         exam_count = int(request.form["exam_count"])
+        clo_count = int(request.form.get("clo_count", 10))
+        clo_names = []
+        for i in range(clo_count):
+            clo_name = request.form.get(f"clo_name_{i}", f"CLO {i+1}")
+            clo_names.append(clo_name)
         # Separate student count for each exam (list)
         students_per_exam = []
         for i in range(exam_count):
@@ -109,6 +134,12 @@ def main():
         )
         db.session.add(course)
         db.session.commit()
+
+        # Save CLOs to database
+        for i, name in enumerate(clo_names):
+            clo = CLO(course_id=course.id, name=name, order=i+1)
+            db.session.add(clo)
+        db.session.commit()
         
         # Save course_id to session
         session["course_id"] = course.id
@@ -118,17 +149,19 @@ def main():
         session["exam_count"] = exam_count
         session["student_count"] = student_count
         session["students_per_exam"] = students_per_exam
+        session["clo_count"] = clo_count
+        session["clo_names"] = clo_names
         session.pop("exams", None) 
         session.pop("question_points", None)
-        session.pop("clos", None) 
+        session.pop("clos", None)
         session.pop("students", None)
         session.pop("clo_q_data", None)
         session.pop("clo_results", None)
         session.pop("total_clo_results", None)
-        session.pop("clo_count", None)
-        session.pop("clo_names", None)
         return redirect(url_for("exam_details"))
-    return render_template("main.html")
+    clo_count = session.get("clo_count", 10)
+    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
+    return render_template("main.html", clo_count=clo_count, clo_names=clo_names)
 
 @app.route("/exam_details", methods=["GET", "POST"])
 def exam_details():
@@ -140,27 +173,37 @@ def exam_details():
     if not course:
         return redirect(url_for("main"))
     
+    exam_count = session.get("exam_count", 0)
     if request.method == "POST":
-        # Process CLO configuration
-        clo_count = int(request.form.get("clo_count", 10))
-        clo_names = []
-        for i in range(clo_count):
-            clo_name = request.form.get(f"clo_name_{i}", f"CLO {i+1}")
-            clo_names.append(clo_name)
-        
-        # Save CLOs to database
-        for i, name in enumerate(clo_names):
-            clo = CLO(course_id=course_id, name=name, order=i+1)
-            db.session.add(clo)
+        weights = []
+        for i in range(exam_count):
+            weight_raw = request.form.get(f"weight_{i}", "0")
+            try:
+                weight_val = int(weight_raw)
+            except ValueError:
+                weight_val = 0
+            weights.append(weight_val)
+
+        total_weight = sum(weights)
+        if total_weight != 100:
+            error = f"Total exam weight is {total_weight}%. It must be exactly 100%."
+            return render_template(
+                "exam_details.html",
+                exam_count=exam_count,
+                enumerate=enumerate,
+                session=session,
+                error=error,
+                form_data=request.form,
+            )
         
         # Process exam details
         exams = []
-        for i in range(session["exam_count"]):
+        for i in range(exam_count):
             exam = Exam(
                 course_id=course_id,
                 name=request.form[f"exam_name_{i}"],
                 question_count=int(request.form[f"question_count_{i}"]),
-                weight=int(request.form[f"weight_{i}"]),
+                weight=weights[i] if i < len(weights) else 0,
                 students_per_exam=session["students_per_exam"][i]
             )
             db.session.add(exam)
@@ -170,21 +213,14 @@ def exam_details():
         
         # Update session
         session["exams"] = [{"name": e.name, "question_count": e.question_count, "weight": e.weight} for e in exams]
-        session["clo_count"] = clo_count
-        session["clo_names"] = clo_names
         
         return redirect(url_for("question_points"))
 
-    # Get existing CLO configuration for display
-    clo_count = session.get("clo_count", 10)
-    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
-    
     return render_template("exam_details.html", 
-                         exam_count=session.get("exam_count", 0), 
-                         clo_count=clo_count,
-                         clo_names=clo_names,
+                         exam_count=exam_count, 
                          enumerate=enumerate,
-                         session=session)
+                         session=session,
+                         form_data=None)
 
 @app.route("/question_points", methods=["GET", "POST"])
 def question_points():
@@ -1032,7 +1068,7 @@ def summary():
     exam_total_stats = []
 
     global_q_idx_counter = 0
-    question_performance_medians = []  # Yeni: her soru için medyanı burada topla
+    question_performance_medians = []  # Yeni: her soru için ortalamayı burada topla
     for exam_idx, exam in enumerate(exams):
         exam_grades = []
         total_possible_points_for_exam = 0
@@ -1059,16 +1095,17 @@ def summary():
             grades_for_question = [g for g in grades_for_question if g is not None]
 
             if grades_for_question:
+                avg_val = np.mean(grades_for_question)
                 median_val = np.median(grades_for_question)
-                perf_median = round((median_val / max_points) * 100, 2) if max_points > 0 else 0
+                perf_avg = round((avg_val / max_points) * 100, 2) if max_points > 0 else 0
                 stats.append({
-                    'avg': round(np.mean(grades_for_question), 2),
+                    'avg': round(avg_val, 2),
                     'median': round(median_val, 2),
                     'max': round(np.max(grades_for_question), 2),
                     'min': round(np.min(grades_for_question), 2),
-                    'performance_median': perf_median
+                    'performance_median': perf_avg
                 })
-                question_performance_medians.append(perf_median)
+                question_performance_medians.append(perf_avg)
             else:
                 stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
                 question_performance_medians.append(0)
@@ -1081,13 +1118,14 @@ def summary():
         exam_totals_list = [t for t in exam_totals_list if t is not None]
 
         if exam_totals_list:
+            avg_exam_total = np.mean(exam_totals_list)
             median_exam_total = np.median(exam_totals_list)
             exam_total_stats.append({
-                'avg': round(np.mean(exam_totals_list), 2),
+                'avg': round(avg_exam_total, 2),
                 'median': round(median_exam_total, 2),
                 'max': round(np.max(exam_totals_list), 2),
                 'min': round(np.min(exam_totals_list), 2),
-                'performance_median': round((median_exam_total / total_possible_points_for_exam) * 100, 2) if total_possible_points_for_exam > 0 else 0
+                'performance_median': round((avg_exam_total / total_possible_points_for_exam) * 100, 2) if total_possible_points_for_exam > 0 else 0
             })
         else:
             exam_total_stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
@@ -1245,10 +1283,7 @@ def download_csv(exam_index):
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1294,10 +1329,7 @@ def download_clo_csv():
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1395,10 +1427,7 @@ def download_clo_analysis_csv():
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1488,10 +1517,10 @@ def download_all_tables():
         clo_result = clo_results[clo_idx]
         row = [
             clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            f"{clo_result.get('max_clo_score', 0):.3f}",
-            f"{clo_result.get('weighted_clo_score', 0):.3f}",
-            f"{clo_result.get('average_bloom_score', 0):.3f}",
-            f"{clo_result.get('weighted_bloom_score', 0):.2f}"
+            clo_result.get('max_clo_score', 0),
+            clo_result.get('weighted_clo_score', 0),
+            clo_result.get('average_bloom_score', 0),
+            clo_result.get('weighted_bloom_score', 0),
         ]
         all_rows.append(row)
     
@@ -1553,10 +1582,10 @@ def download_all_tables():
         
         row = [
             clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            f"{normalized_clo:.2f}%",
-            f"{avg_bloom_level:.2f}",
+            f"{normalized_clo:.2f}".replace('.', ',') + '%',
+            avg_bloom_level,
             performance_text,
-            recommendation_text
+            recommendation_text,
         ]
         all_rows.append(row)
     
@@ -1566,11 +1595,7 @@ def download_all_tables():
         # Her satırı CSV formatında yaz
         csv_row = []
         for cell in row:
-            if isinstance(cell, str):
-                # String değerleri tırnak içine al ve virgülleri escape et
-                csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-            else:
-                csv_row.append(str(cell))
+            csv_row.append(format_csv_cell(cell))
         output.write(';'.join(csv_row) + '\n')
     
     # BOM ekle (Türkçe karakterler için)
@@ -1583,6 +1608,139 @@ def download_all_tables():
     response.headers["Content-Disposition"] = f"attachment; filename={course_code}_all_tables.csv"
     response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
     
+    return response
+
+
+@app.route("/download_summary_csv")
+def download_summary_csv():
+    """Summary sayfasındaki tablolar + CLO Performance Values CSV"""
+    course_id = session.get("course_id")
+    if not course_id:
+        return "Gerekli veriler bulunamadı.", 404
+
+    course = Course.query.get(course_id)
+    if not course:
+        return "Kurs bulunamadı.", 404
+
+    exams = session.get("exams", []) or course.exams
+    students = session.get('students', [])
+    clo_results = session.get('clo_results', [])
+    clo_names = session.get('clo_names', [])
+    all_questions_flat = session.get('all_questions_flat', [])
+    stats = session.get('stats', [])
+    exam_total_stats = session.get('exam_total_stats', [])
+
+    if not exams or not students:
+        return "Gerekli veriler bulunamadı.", 404
+
+    all_rows = []
+
+    # 1. Summary tables (per exam)
+    all_rows.append([])
+    all_rows.append(['SUMMARY TABLES'])
+    all_rows.append([])
+
+    for exam_idx, exam in enumerate(exams):
+        exam_name = exam['name'] if isinstance(exam, dict) else exam.name
+        all_rows.append([f"{exam_name} Exam"])
+
+        headers = ['Student No', 'Name']
+        for question in all_questions_flat:
+            if question['exam_idx'] == exam_idx:
+                headers.append(f"Question {question['question_idx_in_exam'] + 1}")
+        headers.append('Exam Total')
+        all_rows.append(headers)
+
+        for student in students:
+            row = [student.get('number', ''), student.get('name', '')]
+            for question in all_questions_flat:
+                if question['exam_idx'] == exam_idx:
+                    grade = student['grades'][question['global_question_idx']] if question['global_question_idx'] < len(student['grades']) else 0
+                    row.append(grade)
+            exam_total = student.get('exam_totals', [])[exam_idx] if exam_idx < len(student.get('exam_totals', [])) else 0
+            row.append(exam_total)
+            all_rows.append(row)
+
+        # Stats rows
+        if stats and exam_total_stats and exam_idx < len(exam_total_stats):
+            avg_row = ['Average', '']
+            median_row = ['Median', '']
+            max_row = ['Max', '']
+            min_row = ['Min', '']
+            perf_row = ['Student Performance Average (%)', '']
+            for question in all_questions_flat:
+                if question['exam_idx'] == exam_idx:
+                    q_stats = stats[question['global_question_idx']]
+                    avg_row.append(q_stats.get('avg', 0))
+                    median_row.append(q_stats.get('median', 0))
+                    max_row.append(q_stats.get('max', 0))
+                    min_row.append(q_stats.get('min', 0))
+                    perf_row.append(q_stats.get('performance_median', 0))
+            avg_row.append(exam_total_stats[exam_idx].get('avg', 0))
+            median_row.append(exam_total_stats[exam_idx].get('median', 0))
+            max_row.append(exam_total_stats[exam_idx].get('max', 0))
+            min_row.append(exam_total_stats[exam_idx].get('min', 0))
+            perf_row.append(exam_total_stats[exam_idx].get('performance_median', 0))
+
+            all_rows.append(avg_row)
+            all_rows.append(median_row)
+            all_rows.append(max_row)
+            all_rows.append(min_row)
+            all_rows.append(perf_row)
+
+        all_rows.append([])
+
+    # 2. Overall Results table
+    all_rows.append(['OVERALL RESULTS'])
+    overall_headers = ['Student No', 'Name']
+    for exam in exams:
+        exam_name = exam['name'] if isinstance(exam, dict) else exam.name
+        exam_weight = exam['weight'] if isinstance(exam, dict) else exam.weight
+        overall_headers.append(f"{exam_name} Notu ({exam_weight}%)")
+    overall_headers.append('Overall Total (100)')
+    all_rows.append(overall_headers)
+
+    for student in students:
+        row = [student.get('number', ''), student.get('name', '')]
+        for exam_total in student.get('exam_totals', []):
+            row.append(exam_total)
+        row.append(student.get('overall_total', 0))
+        all_rows.append(row)
+
+    # 3. CLO Performance Values Table
+    all_rows.append([])
+    all_rows.append(['CLO PERFORMANCE VALUES TABLE'])
+    all_rows.append([])
+
+    clo_performance_headers = ['CLO', 'Max CLO Score', 'CLO Score', 'MW-BL', 'Weighted BL Sum']
+    all_rows.append(clo_performance_headers)
+
+    for clo_idx in range(len(clo_results)):
+        clo_result = clo_results[clo_idx]
+        row = [
+            clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
+            clo_result.get('max_clo_score', 0),
+            clo_result.get('weighted_clo_score', 0),
+            clo_result.get('average_bloom_score', 0),
+            clo_result.get('weighted_bloom_score', 0),
+        ]
+        all_rows.append(row)
+
+    output = io.StringIO()
+    for row in all_rows:
+        csv_row = []
+        for cell in row:
+            csv_row.append(format_csv_cell(cell))
+        output.write(';'.join(csv_row) + '\n')
+
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
+
+    response = make_response(csv_output)
+    course_code = course.course_code
+    response.headers["Content-Disposition"] = f"attachment; filename={course_code}_summary_tables.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+
     return response
 
 # MANUAL CALCULATION FUNCTIONS (numpy replacement)

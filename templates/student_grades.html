@@ -350,8 +350,8 @@ input[readonly] {
         
                  <!-- Automatic Calculation Information -->
          <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 10px; margin-bottom: 20px; text-align: center; font-size: 11px;">
-             <strong>ℹ️ Information:</strong> All values (QCT, W, SPM, BL) are automatically calculated and entered. 
-             QCT: (Question points × Exam percentage) ÷ 100 | W: 1 ÷ CLO count | SPM: Student performance median | BL: Bloom level
+            <strong>ℹ️ Information:</strong> All values (QCT, W, SPM, BL) are automatically calculated and entered. 
+            QCT: (Question points × Exam percentage) ÷ 100 | W: 1 ÷ CLO count | SPM: Student performance average | BL: Bloom level
                            <br><strong>⚠️ Important:</strong> These fields are system-generated and cannot be modified manually.
          </div>
 
@@ -436,9 +436,9 @@ input[readonly] {
                     {% endfor %}
                     
                     <!-- Performance Values -->
-                     <td class="calc-cell" id="max_clo_{{ clo_idx }}">0.000</td>
-                     <td class="calc-cell" id="weighted_clo_{{ clo_idx }}">0.000</td>
-                     <td class="calc-cell" id="avg_bloom_{{ clo_idx }}">0.000</td>
+                    <td class="calc-cell" id="max_clo_{{ clo_idx }}">0.00</td>
+                    <td class="calc-cell" id="weighted_clo_{{ clo_idx }}">0.00</td>
+                    <td class="calc-cell" id="avg_bloom_{{ clo_idx }}">0.00</td>
                      <td class="calc-cell" id="weighted_bl_sum_{{ clo_idx }}">0.00</td>
                 </tr>
                 {% endfor %}
@@ -447,9 +447,9 @@ input[readonly] {
                 <tr class="total-row">
                     <td>TOTAL</td>
                     <td colspan="{{ exams|sum(attribute='question_count') * 4 }}"></td>
-                     <td id="total_max_clo">0.000</td>
-                     <td id="total_weighted_clo">0.000</td>
-                     <td id="total_avg_bloom">0.000</td>
+                    <td id="total_max_clo">0.00</td>
+                    <td id="total_weighted_clo">0.00</td>
+                    <td id="total_avg_bloom">0.00</td>
                      <td id="total_weighted_bl_sum">0.00</td>
                 </tr>
             </table>
@@ -598,13 +598,13 @@ input[readonly] {
           </tr>
           
           <tr class="performance-row">
-            <th colspan="3">Student Performance Median (%)</th>
+            <th colspan="3">Student Performance Average (%)</th>
             {% for q_flat in all_questions_flat %}
                 {% if q_flat.exam_idx == exam_idx %}
-                    <td><input type="text" class="performance-median" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
+                    <td><input type="text" class="performance-average" data-question="{{ q_flat.global_question_idx }}" readonly style="width:40px;"></td>
                 {% endif %}
             {% endfor %}
-            <td><input type="text" class="performance-median-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
+            <td><input type="text" class="performance-average-exam-total" data-exam="{{ exam_idx }}" readonly style="width:50px;"></td>
           </tr>
         </tfoot>
       </table>
@@ -616,13 +616,6 @@ input[readonly] {
   <br>
 <button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
 </form>
-
-<!-- Result Button at bottom -->
-<div style="margin-top: 30px; text-align: center;">
-    <a href="{{ url_for('bloom_mapping') }}" class="submit-btn" style="background-color: #17a2b8; display: inline-block; margin: 0;">
-        📊 Result
-    </a>
-</div>
 
 <script>
 const examsData = JSON.parse('{{ exams | tojson | safe }}');
@@ -678,21 +671,19 @@ function calcStats(arr) {
   };
 }
 
-function calculatePerformanceMedianForQuestion(globalQuestionIdx, questionMaxPoints) {
+function calculatePerformanceAverageForQuestion(globalQuestionIdx, questionMaxPoints) {
   let vals = getColumnValues(globalQuestionIdx);
   if (vals.length === 0 || questionMaxPoints === 0) return '';
-  
-  let sortedVals = [...vals].sort((a,b) => a - b);
-  let medianValue = sortedVals.length % 2 === 1 
-    ? sortedVals[Math.floor(sortedVals.length / 2)]
-    : (sortedVals[sortedVals.length / 2 - 1] + sortedVals[sortedVals.length / 2]) / 2;
-  
-  let performanceMedian = (medianValue / questionMaxPoints) * 100;
-  
-  return parseFloat(performanceMedian.toFixed(2));
+
+  const sum = vals.reduce((a, b) => a + b, 0);
+  const avgValue = sum / vals.length;
+
+  let performanceAverage = (avgValue / questionMaxPoints) * 100;
+
+  return parseFloat(performanceAverage.toFixed(2));
 }
 
-function calculateExamPerformanceMedian(examIdx) {
+function calculateExamPerformanceAverage(examIdx) {
     let studentExamTotals = getExamTotalValues(examIdx);
     if (studentExamTotals.length === 0) return '';
 
@@ -702,13 +693,11 @@ function calculateExamPerformanceMedian(examIdx) {
 
     if (currentExamTotalPossiblePoints === 0) return '';
 
-    let sortedStudentExamTotals = [...studentExamTotals].sort((a,b) => a - b);
-    let medianExamTotalValue = sortedStudentExamTotals.length % 2 === 1 
-      ? sortedStudentExamTotals[Math.floor(sortedStudentExamTotals.length / 2)]
-      : (sortedStudentExamTotals[sortedStudentExamTotals.length / 2 - 1] + sortedStudentExamTotals[sortedStudentExamTotals.length / 2]) / 2;
-        
-    let performanceMedian = (medianExamTotalValue / currentExamTotalPossiblePoints) * 100;
-    return parseFloat(performanceMedian.toFixed(2));
+    const sum = studentExamTotals.reduce((a, b) => a + b, 0);
+    const avgExamTotalValue = sum / studentExamTotals.length;
+
+    let performanceAverage = (avgExamTotalValue / currentExamTotalPossiblePoints) * 100;
+    return parseFloat(performanceAverage.toFixed(2));
 }
 
 
@@ -751,9 +740,9 @@ function recalcCurrentTabStats() {
         if (avgInput) avgInput.value = stats.avg !== '' ? stats.avg.toFixed(1) : '';
         if (medianInput) medianInput.value = stats.median !== '' ? stats.median.toFixed(1) : '';
         
-        let perfMedian = calculatePerformanceMedianForQuestion(globalQIdx, currentExamQuestions[q].max_points);
-        let perfInput = activeTabContent.querySelector(`.performance-median[data-question='${globalQIdx}']`);
-        if (perfInput) perfInput.value = perfMedian !== '' ? perfMedian.toFixed(2) : '';
+        let perfAverage = calculatePerformanceAverageForQuestion(globalQIdx, currentExamQuestions[q].max_points);
+        let perfInput = activeTabContent.querySelector(`.performance-average[data-question='${globalQIdx}']`);
+        if (perfInput) perfInput.value = perfAverage !== '' ? perfAverage.toFixed(2) : '';
     }
     
     let examTotalVals = getExamTotalValues(activeExamIdx);
@@ -769,9 +758,9 @@ function recalcCurrentTabStats() {
     if (avgTotalInput) avgTotalInput.value = tStats.avg !== '' ? tStats.avg.toFixed(1) : '';
     if (medianTotalInput) medianTotalInput.value = tStats.median !== '' ? tStats.median.toFixed(1) : '';
 
-    let examPerfMedian = calculateExamPerformanceMedian(activeExamIdx);
-    let perfExamTotalInput = activeTabContent.querySelector(`.performance-median-exam-total[data-exam='${activeExamIdx}']`);
-    if (perfExamTotalInput) perfExamTotalInput.value = examPerfMedian !== '' ? examPerfMedian.toFixed(2) : '';
+    let examPerfAverage = calculateExamPerformanceAverage(activeExamIdx);
+    let perfExamTotalInput = activeTabContent.querySelector(`.performance-average-exam-total[data-exam='${activeExamIdx}']`);
+    if (perfExamTotalInput) perfExamTotalInput.value = examPerfAverage !== '' ? examPerfAverage.toFixed(2) : '';
 }
 
 function openTab(event, tabId) {
@@ -1000,19 +989,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Grades for Q${questionIdxInExam + 1}:`, gradesForQuestion);
             
-                         // Calculate SPM
-             let spmValue = 0;
+            // Calculate SPM (average-based)
+            let spmValue = 0;
             if (gradesForQuestion.length > 0 && maxPoints > 0) {
-                const sortedGrades = [...gradesForQuestion].sort((a, b) => a - b);
-                let median;
-                if (sortedGrades.length % 2 === 0) {
-                    median = (sortedGrades[sortedGrades.length / 2 - 1] + sortedGrades[sortedGrades.length / 2]) / 2;
-                } else {
-                    median = sortedGrades[Math.floor(sortedGrades.length / 2)];
-                }
-                
-                spmValue = (median / maxPoints) * 100;
-                console.log(`SPM calculation for Q${questionIdxInExam + 1}: median=${median}, maxPoints=${maxPoints}, SPM=${spmValue.toFixed(2)}%`);
+                const sum = gradesForQuestion.reduce((a, b) => a + b, 0);
+                const avg = sum / gradesForQuestion.length;
+
+                spmValue = (avg / maxPoints) * 100;
+                console.log(`SPM calculation for Q${questionIdxInExam + 1}: avg=${avg}, maxPoints=${maxPoints}, SPM=${spmValue.toFixed(2)}%`);
             } else {
                 console.log(`No grades found for Q${questionIdxInExam + 1} or maxPoints is 0`);
             }
@@ -1085,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         qctInput.style.fontWeight = 'bold';
                     }
                     if (wInput) {
-                        wInput.value = wValue.toFixed(3);
+                        wInput.value = wValue.toFixed(2);
                         wInput.style.backgroundColor = '#fff3cd';
                         wInput.style.fontWeight = 'bold';
                     }
@@ -1100,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         blInput.style.fontWeight = 'bold';
                     }
                     
-                    console.log(`Updated CLO ${cloIdx + 1}, Q${questionIdxInExam + 1}: QCT=${qctValue.toFixed(2)}, W=${wValue.toFixed(3)}, SPM=${spmValue.toFixed(2)}, BL=${blValue.toFixed(1)}`);
+                    console.log(`Updated CLO ${cloIdx + 1}, Q${questionIdxInExam + 1}: QCT=${qctValue.toFixed(2)}, W=${wValue.toFixed(2)}, SPM=${spmValue.toFixed(2)}, BL=${blValue.toFixed(1)}`);
                 } else {
                     // Clear fields if CLO is not selected
                     if (qctInput) {
@@ -1230,9 +1214,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`- W List:`, wList);
                 console.log(`- SPM List:`, spmList);
                 console.log(`- BL List:`, blList);
-                console.log(`- Max CLO Score: ${maxCLOScore.toFixed(3)}`);
-                console.log(`- Weighted CLO Score: ${weightedCLOScore.toFixed(3)}`);
-                console.log(`- Average Bloom Score: ${averageBloomScore.toFixed(3)}`);
+                console.log(`- Max CLO Score: ${maxCLOScore.toFixed(2)}`);
+                console.log(`- Weighted CLO Score: ${weightedCLOScore.toFixed(2)}`);
+                console.log(`- Average Bloom Score: ${averageBloomScore.toFixed(2)}`);
                 console.log(`- Weighted BL Sum: ${weightedBloomSum.toFixed(2)}`);
             }
             
@@ -1242,12 +1226,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const averageBLCell = document.getElementById(`avg_bloom_${cloIdx}`);
             const weightedBLSumCell = document.getElementById(`weighted_bl_sum_${cloIdx}`);
             
-            if (maxCLOCell) maxCLOCell.textContent = maxCLOScore.toFixed(3);
-            if (weightedCLOCell) weightedCLOCell.textContent = weightedCLOScore.toFixed(3);
-            if (averageBLCell) averageBLCell.textContent = averageBloomScore.toFixed(3);
+            if (maxCLOCell) maxCLOCell.textContent = maxCLOScore.toFixed(2);
+            if (weightedCLOCell) weightedCLOCell.textContent = weightedCLOScore.toFixed(2);
+            if (averageBLCell) averageBLCell.textContent = averageBloomScore.toFixed(2);
             if (weightedBLSumCell) weightedBLSumCell.textContent = weightedBloomSum.toFixed(2);
             
-            console.log(`CLO ${cloIdx + 1}: Max=${maxCLOScore.toFixed(3)}, Weighted=${weightedCLOScore.toFixed(3)}, AvgBL=${averageBloomScore.toFixed(3)}, WeightedBLSum=${weightedBloomSum.toFixed(2)}`);
+            console.log(`CLO ${cloIdx + 1}: Max=${maxCLOScore.toFixed(2)}, Weighted=${weightedCLOScore.toFixed(2)}, AvgBL=${averageBloomScore.toFixed(2)}, WeightedBLSum=${weightedBloomSum.toFixed(2)}`);
         });
         
         // Update TOTAL row
@@ -1283,12 +1267,12 @@ document.addEventListener('DOMContentLoaded', function() {
          const totalAverageBLCell = document.getElementById('total_avg_bloom');
          const totalWeightedBLSumCell = document.getElementById('total_weighted_bl_sum');
          
-         if (totalMaxCLOCell) totalMaxCLOCell.textContent = totalMaxCLO.toFixed(3);
-         if (totalWeightedCLOCell) totalWeightedCLOCell.textContent = totalWeightedCLO.toFixed(3);
-         if (totalAverageBLCell) totalAverageBLCell.textContent = totalAverageBL.toFixed(3);
+        if (totalMaxCLOCell) totalMaxCLOCell.textContent = totalMaxCLO.toFixed(2);
+        if (totalWeightedCLOCell) totalWeightedCLOCell.textContent = totalWeightedCLO.toFixed(2);
+        if (totalAverageBLCell) totalAverageBLCell.textContent = totalAverageBL.toFixed(2);
          if (totalWeightedBLSumCell) totalWeightedBLSumCell.textContent = totalWeightedBLSum.toFixed(2);
          
-         console.log(`TOTAL: Max=${totalMaxCLO.toFixed(3)}, Weighted=${totalWeightedCLO.toFixed(3)}, AvgBL=${totalAverageBL.toFixed(3)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
+        console.log(`TOTAL: Max=${totalMaxCLO.toFixed(2)}, Weighted=${totalWeightedCLO.toFixed(2)}, AvgBL=${totalAverageBL.toFixed(2)}, WeightedBLSum=${totalWeightedBLSum.toFixed(2)}`);
      }
 
              // Perform automatic calculation when page loads
