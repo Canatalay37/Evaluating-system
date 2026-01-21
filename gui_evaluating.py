@@ -125,6 +125,9 @@ def main():
                 students_per_exam.append(0)
         # Total student count (take maximum to preserve existing logic especially for student_grades)
         student_count = max(students_per_exam) if students_per_exam else 0
+
+        # Save form data for back navigation
+        session["main_form"] = {k: v for k, v in request.form.items()}
         
         # Save to database
         course = Course(
@@ -161,7 +164,14 @@ def main():
         return redirect(url_for("exam_details"))
     clo_count = session.get("clo_count", 10)
     clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
-    return render_template("main.html", clo_count=clo_count, clo_names=clo_names)
+    main_form = session.get("main_form", {})
+    return render_template(
+        "main.html",
+        clo_count=clo_count,
+        clo_names=clo_names,
+        main_form=main_form,
+        students_per_exam=session.get("students_per_exam", []),
+    )
 
 @app.route("/exam_details", methods=["GET", "POST"])
 def exam_details():
@@ -175,6 +185,7 @@ def exam_details():
     
     exam_count = session.get("exam_count", 0)
     if request.method == "POST":
+        session["exam_details_form"] = {k: v for k, v in request.form.items()}
         weights = []
         for i in range(exam_count):
             weight_raw = request.form.get(f"weight_{i}", "0")
@@ -216,11 +227,20 @@ def exam_details():
         
         return redirect(url_for("question_points"))
 
-    return render_template("exam_details.html", 
-                         exam_count=exam_count, 
-                         enumerate=enumerate,
-                         session=session,
-                         form_data=None)
+    form_data = session.get("exam_details_form")
+    if not form_data and session.get("exams"):
+        form_data = {}
+        for i, exam in enumerate(session.get("exams", [])):
+            form_data[f"exam_name_{i}"] = exam.get("name", "")
+            form_data[f"question_count_{i}"] = exam.get("question_count", "")
+            form_data[f"weight_{i}"] = exam.get("weight", "")
+    return render_template(
+        "exam_details.html",
+        exam_count=exam_count,
+        enumerate=enumerate,
+        session=session,
+        form_data=form_data,
+    )
 
 @app.route("/question_points", methods=["GET", "POST"])
 def question_points():
@@ -236,6 +256,7 @@ def question_points():
     students_per_exam = session.get("students_per_exam", [])
     clo_count = session.get("clo_count", 10)
     clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
+    question_points = session.get("question_points", [])
     
     if not exams:
         return redirect(url_for("exam_details"))
@@ -312,6 +333,30 @@ def question_points():
         session["question_points"] = question_points_list
         return redirect(url_for("student_grades"))
     
+    points_prefill = []
+    bl_prefill = []
+    clo_prefill = []
+    for exam_idx, exam in enumerate(exams):
+        q_count = int(exam["question_count"])
+        points_row = [None] * q_count
+        bl_row = [None] * q_count
+        clo_row = [set() for _ in range(q_count)]
+        if question_points and exam_idx < len(question_points):
+            for rec in question_points[exam_idx]:
+                q_idx = rec.get("question_idx")
+                if q_idx is None or q_idx >= q_count:
+                    continue
+                if points_row[q_idx] is None:
+                    points_row[q_idx] = rec.get("points")
+                if bl_row[q_idx] is None:
+                    bl_row[q_idx] = rec.get("bl")
+                clo_val = rec.get("clo")
+                if clo_val:
+                    clo_row[q_idx].add(clo_val)
+        points_prefill.append(points_row)
+        bl_prefill.append(bl_row)
+        clo_prefill.append([sorted(list(s)) for s in clo_row])
+
     return render_template(
         "question_points.html",
         exams=exams,
@@ -320,6 +365,9 @@ def question_points():
         students_per_exam=students_per_exam,
         enumerate=enumerate,
         session=session,
+        points_prefill=points_prefill,
+        bl_prefill=bl_prefill,
+        clo_prefill=clo_prefill,
     )
 
 @app.route("/student_grades", methods=["GET", "POST"])
@@ -455,7 +503,7 @@ def student_grades():
             question_performance_medians = session.get("question_performance_medians", [])
             clo_results = []
             for clo_idx in range(1, clo_count+1):
-                qct_list, w_list, spm_list, bl_list = [], [], [], []
+                qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
                 for exam_idx, exam in enumerate(exams):
                     for q in range(exam["question_count"]):
                         global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -463,14 +511,21 @@ def student_grades():
                         w = clo_q_data[clo_idx-1][global_q_idx]['w']
                         spm = clo_q_data[clo_idx-1][global_q_idx]['spm']
                         bl = clo_q_data[clo_idx-1][global_q_idx]['bl']
+                        ep_val = 0.0
+                        if exam_idx < len(question_points_nested):
+                            for q_rec in question_points_nested[exam_idx]:
+                                if q_rec.get('question_idx') == q:
+                                    ep_val = q_rec.get('points', 0)
+                                    break
                         qct_list.append(qct)
                         w_list.append(w)
                         spm_list.append(spm)
                         bl_list.append(bl)
+                        ep_list.append(ep_val)
                 clo_results.append({
                     "max_clo_score": max_possible_clo_score(qct_list, w_list),
                     "weighted_clo_score": weighted_clo_score(qct_list, w_list, spm_list),
-                    "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list),
+                    "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list),
                     "weighted_bloom_score": weighted_bloom_score(qct_list, w_list, bl_list),
                     "average_bloom_score": average_bloom_score(qct_list, w_list, bl_list)
                 })
@@ -496,9 +551,11 @@ def student_grades():
                     for q_idx_in_exam in range(int(exam['question_count'])):
                         grades_for_question = []
                         for student in students:
-                            if (global_q_idx_counter < len(student['grades']) and 
-                                student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                grades_for_question.append(student['grades'][global_q_idx_counter])
+                            if global_q_idx_counter < len(student['grades']):
+                                grade_val = student['grades'][global_q_idx_counter]
+                                if grade_val is None or grade_val == '':
+                                    continue
+                                grades_for_question.append(grade_val)
                         
                         spm_val = 0.0
                         if grades_for_question:
@@ -510,8 +567,8 @@ def student_grades():
                                     break
                             
                             if max_points > 0:
-                                median_val = np.median(grades_for_question)
-                                spm_val = round((median_val / max_points) * 100, 2)
+                                avg_val = np.mean(grades_for_question)
+                                spm_val = round((avg_val / max_points) * 100, 2)
                         
                         question_performance_medians.append(spm_val)
                         global_q_idx_counter += 1
@@ -651,9 +708,11 @@ def student_grades():
                                 students = session['students']
                                 grades_for_question = []
                                 for student in students:
-                                    if (global_q_idx_counter < len(student['grades']) and 
-                                        student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                        grades_for_question.append(student['grades'][global_q_idx_counter])
+                                    if global_q_idx_counter < len(student['grades']):
+                                        grade_val = student['grades'][global_q_idx_counter]
+                                        if grade_val is None or grade_val == '':
+                                            continue
+                                        grades_for_question.append(grade_val)
                                 
                                 if grades_for_question:
                                     # Max points'i bul
@@ -664,8 +723,8 @@ def student_grades():
                                             break
                                     
                                     if max_points > 0:
-                                        median_val = np.median(grades_for_question)
-                                        spm_val = round((median_val / max_points) * 100, 2)
+                                        avg_val = np.mean(grades_for_question)
+                                        spm_val = round((avg_val / max_points) * 100, 2)
                             else:
                                 # If no student data, get from question_performance_medians
                                 question_performance_medians = session.get("question_performance_medians", [])
@@ -697,7 +756,7 @@ def student_grades():
     if not clo_results:
         clo_results = []
         for clo_idx in range(1, clo_count+1):
-            qct_list, w_list, spm_list, bl_list = [], [], [], []
+            qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -720,15 +779,17 @@ def student_grades():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx < len(student['grades']) and 
-                                    student['grades'][global_q_idx] not in [0, 0.0, '', None]):
-                                    grades_for_question.append(student['grades'][global_q_idx])
+                                if global_q_idx < len(student['grades']):
+                                    grade_val = student['grades'][global_q_idx]
+                                    if grade_val is None or grade_val == '':
+                                        continue
+                                    grades_for_question.append(grade_val)
                             
                             if grades_for_question:
                                 max_points = rec.get('points', 0)
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm = round((median_val / max_points) * 100, 2)
+                                    avg_val = np.mean(grades_for_question)
+                                    spm = round((avg_val / max_points) * 100, 2)
                         
                         # Sadece bu CLO'ya ait olan soruları ekle
                         if qct > 0 and w > 0:
@@ -736,11 +797,12 @@ def student_grades():
                             w_list.append(w)
                             spm_list.append(spm)
                             bl_list.append(bl)
+                            ep_list.append(rec.get('points', 0))
             
             # CLO Score hesaplamaları
             max_clo = max_possible_clo_score(qct_list, w_list)
             weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
             weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
             avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
             
@@ -835,9 +897,11 @@ def bloom_mapping():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx_counter < len(student['grades']) and 
-                                    student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                    grades_for_question.append(student['grades'][global_q_idx_counter])
+                                if global_q_idx_counter < len(student['grades']):
+                                    grade_val = student['grades'][global_q_idx_counter]
+                                    if grade_val is None or grade_val == '':
+                                        continue
+                                    grades_for_question.append(grade_val)
                             
                             if grades_for_question:
                                 # Max points'i bul
@@ -848,8 +912,8 @@ def bloom_mapping():
                                         break
                                 
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm_val = round((median_val / max_points) * 100, 2)
+                                    avg_val = np.mean(grades_for_question)
+                                    spm_val = round((avg_val / max_points) * 100, 2)
                         else:
                             # If no student data, get from question_performance_medians
                             question_performance_medians = session.get("question_performance_medians", [])
@@ -881,7 +945,7 @@ def bloom_mapping():
         # Calculate clo_results
         clo_results = []
         for clo_idx in range(1, clo_count+1):
-            qct_list, w_list, spm_list, bl_list = [], [], [], []
+            qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
             
             # Scan all questions for this CLO
             for exam_idx, exam in enumerate(exams):
@@ -913,21 +977,19 @@ def bloom_mapping():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx < len(student['grades']) and 
-                                    student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                                if global_q_idx < len(student['grades']):
                                     try:
                                         grade_val = float(student['grades'][global_q_idx])
-                                        if grade_val > 0:
-                                            grades_for_question.append(grade_val)
+                                        grades_for_question.append(grade_val)
                                     except (ValueError, TypeError):
                                         continue
                             
                             if grades_for_question:
                                 max_points = rec.get('points', 0)
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm = round((median_val / max_points) * 100, 2)
-                                    print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, median={median_val}, max_points={max_points}, SPM={spm}")
+                                    avg_val = np.mean(grades_for_question)
+                                    spm = round((avg_val / max_points) * 100, 2)
+                                    print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, avg={avg_val}, max_points={max_points}, SPM={spm}")
                                 else:
                                     print(f"CLO {clo_idx}, Q{q+1}: max_points is 0")
                                     spm = 50.0  # Default 50% performance
@@ -946,13 +1008,14 @@ def bloom_mapping():
                             w_list.append(w)
                             spm_list.append(spm)
                             bl_list.append(bl)
+                            ep_list.append(rec.get('points', 0))
                             
                             print(f"CLO {clo_idx}, Q{q+1}: QCT={qct}, W={w}, SPM={spm}, BL={bl}")
             
             # CLO Score hesaplamaları
             max_clo = max_possible_clo_score(qct_list, w_list)
             weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
             weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
             avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
             
@@ -1149,7 +1212,7 @@ def summary():
     # CLO hesaplamalarını yap
     clo_results = []
     for clo_idx in range(1, clo_count+1):
-        qct_list, w_list, spm_list, bl_list = [], [], [], []
+        qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
         
         # Scan all questions for this CLO
         for exam_idx, exam in enumerate(exams):
@@ -1173,20 +1236,18 @@ def summary():
                     if students:
                         grades_for_question = []
                         for student in students:
-                            if (global_q_idx < len(student['grades']) and 
-                                student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                            if global_q_idx < len(student['grades']):
                                 try:
                                     grade_val = float(student['grades'][global_q_idx])
-                                    if grade_val > 0:
-                                        grades_for_question.append(grade_val)
+                                    grades_for_question.append(grade_val)
                                 except (ValueError, TypeError):
                                     continue
                         
                         if grades_for_question:
                             max_points = rec.get('points', 0)
                             if max_points > 0:
-                                median_val = np.median(grades_for_question)
-                                spm = round((median_val / max_points) * 100, 2)
+                                avg_val = np.mean(grades_for_question)
+                                spm = round((avg_val / max_points) * 100, 2)
                     
                     # Sadece bu CLO'ya ait olan soruları ekle
                     if qct > 0 and w > 0:
@@ -1194,11 +1255,12 @@ def summary():
                         w_list.append(w)
                         spm_list.append(spm)
                         bl_list.append(bl)
+                        ep_list.append(rec.get('points', 0))
         
         # CLO Score hesaplamaları
         max_clo = max_possible_clo_score(qct_list, w_list)
         weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-        normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+        normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
         weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
         avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
         
@@ -1786,45 +1848,32 @@ def weighted_clo_score(qct_list, w_list, spm_list):
         return 0
     return sum((qct / 100) * w * (spm / 100) for qct, w, spm in zip(qct_list, w_list, spm_list))
 
-def normalized_clo_score(qct_list, w_list, spm_list):
-    """Normalize edilmiş CLO skoru hesapla - yüzde olarak"""
-    if not qct_list or not w_list or not spm_list or len(qct_list) != len(w_list) or len(w_list) != len(spm_list):
-        print(f"normalized_clo_score: Invalid input lengths - qct:{len(qct_list)}, w:{len(w_list)}, spm:{len(spm_list)}")
+def normalized_clo_score(qct_list, w_list, spm_list, bl_list=None, ep_list=None):
+    """Normalize edilmiş CLO skoru hesapla - yüzde olarak (BL ağırlıklı)"""
+    if (not w_list or not spm_list or not qct_list or not bl_list or
+        len(qct_list) != len(w_list) or len(w_list) != len(spm_list) or len(spm_list) != len(bl_list)):
+        print(
+            "normalized_clo_score: Invalid input lengths - "
+            f"qct:{len(qct_list)}, w:{len(w_list)}, spm:{len(spm_list)}, bl:{len(bl_list)}"
+        )
         return 0
-    
-    print(f"normalized_clo_score: Input data - qct_list: {qct_list}, w_list: {w_list}, spm_list: {spm_list}")
-    
-    # Sadece pozitif değerleri olan soruları al
-    valid_data = [(qct, w, spm) for qct, w, spm in zip(qct_list, w_list, spm_list) if qct > 0 and w > 0]
-    
-    print(f"normalized_clo_score: valid_data = {valid_data}")
-    
-    if not valid_data:
-        print("normalized_clo_score: No valid data found - all qct or w values are 0 or negative")
-        return 0
-    
-    # Normalized CLO Score = (Weighted CLO Score / Max Possible CLO Score) * 100
-    weighted_score = sum((qct / 100) * w * (spm / 100) for qct, w, spm in valid_data)
-    max_score = sum((qct / 100) * w for qct, w, _ in valid_data)
-    
-    print(f"normalized_clo_score: weighted_score = {weighted_score}, max_score = {max_score}")
-    
-    # Detaylı hesaplama adımlarını göster
-    print("normalized_clo_score: Detailed calculation steps:")
-    for i, (qct, w, spm) in enumerate(valid_data):
-        qct_term = (qct / 100) * w
-        spm_term = (qct / 100) * w * (spm / 100)
-        print(f"  Item {i+1}: QCT={qct}, W={w}, SPM={spm}")
-        print(f"    QCT term: ({qct}/100) * {w} = {qct_term}")
-        print(f"    SPM term: ({qct}/100) * {w} * ({spm}/100) = {spm_term}")
-    
-    if max_score > 0:
-        result = (weighted_score / max_score) * 100
-        print(f"normalized_clo_score: Final calculation: ({weighted_score} / {max_score}) * 100 = {result}")
+
+    # Normalized CLO % = SUMPRODUCT(CLO Score, Bloom Weight) / SUMPRODUCT(Max CLO Score, Bloom Weight) * 100
+    # CLO Score per question = (QCT/100) * W * (SPM/100)
+    # Max CLO Score per question = (QCT/100) * W
+    # Bloom Weight is a percentage; convert to coefficient by dividing by 100
+    numerator = sum((qct / 100) * w * (spm / 100) * (bl / 100) for qct, w, spm, bl in zip(qct_list, w_list, spm_list, bl_list))
+    denominator = sum((qct / 100) * w * (bl / 100) for qct, w, bl in zip(qct_list, w_list, bl_list))
+
+    print(f"normalized_clo_score: numerator = {numerator}, denominator = {denominator}")
+
+    if denominator > 0:
+        result = (numerator / denominator) * 100
+        print(f"normalized_clo_score: Final calculation: ({numerator} / {denominator}) * 100 = {result}")
         return result
-    else:
-        print("normalized_clo_score: max_score is 0 - this should not happen with valid data")
-        return 0
+
+    print("normalized_clo_score: denominator is 0 - this should not happen with valid data")
+    return 0
 
 def weighted_bloom_score(qct_list, w_list, bl_list):
     """Ağırlıklı Bloom skoru hesapla"""

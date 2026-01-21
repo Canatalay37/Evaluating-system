@@ -171,7 +171,7 @@ input[readonly] {
     padding: 20px;
     border: 1px solid #888;
     width: 95%;
-    max-width: 1400px;
+    max-width: 1600px;
     max-height: 90vh;
     overflow-y: auto;
     border-radius: 8px;
@@ -198,17 +198,18 @@ input[readonly] {
 /* Bloom Mapping Table Styles */
 .bloom-table { 
     border-collapse: collapse; 
-    width: 100%; 
+    width: max-content;
+    min-width: 100%;
     margin-bottom: 20px;
     border: 2px solid #2c3e50;
-    font-size: 10px;
+    font-size: 11px;
 }
 .bloom-table th, .bloom-table td { 
     border: 1px solid #34495e; 
     padding: 4px 2px; 
     text-align: center; 
     vertical-align: middle;
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .main-header {
@@ -246,13 +247,26 @@ input[readonly] {
     padding: 1px;
 }
 .input-cell input {
-    width: 35px;
-    height: 20px;
+    width: 48px;
+    height: 24px;
     border: 1px solid #bdc3c7;
     text-align: center;
-    font-size: 9px;
+    font-size: 11px;
     border-radius: 3px;
     padding: 2px;
+    font-weight: 700;
+    color: #1f2d3d;
+}
+
+/* Hide number input spinners for cleaner grade entry */
+.grade-input::-webkit-outer-spin-button,
+.grade-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.grade-input {
+    appearance: textfield;
+    -moz-appearance: textfield;
 }
 .input-cell input:focus {
     outline: none;
@@ -262,8 +276,8 @@ input[readonly] {
 
 .input-cell input:not([value=""]) {
     background-color: #fff3cd;
-    font-weight: bold;
-    color: #856404;
+    font-weight: 700;
+    color: #1f2d3d;
 }
 
 .calc-cell {
@@ -786,6 +800,34 @@ function openTab(event, tabId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  function moveToSiblingGradeInput(currentInput, direction) {
+    const row = currentInput.closest('.student-row');
+    if (!row) return;
+    const inputs = Array.from(row.querySelectorAll('input.grade-input'));
+    const idx = inputs.indexOf(currentInput);
+    if (idx === -1) return;
+    const nextIdx = idx + direction;
+    if (nextIdx >= 0 && nextIdx < inputs.length) {
+      inputs[nextIdx].focus();
+      inputs[nextIdx].select();
+    }
+  }
+
+  function moveToRowGradeInput(currentInput, direction) {
+    const row = currentInput.closest('.student-row');
+    if (!row) return;
+    const inputs = Array.from(row.querySelectorAll('input.grade-input'));
+    const idx = inputs.indexOf(currentInput);
+    if (idx === -1) return;
+    const targetRow = direction === -1 ? row.previousElementSibling : row.nextElementSibling;
+    if (!targetRow || !targetRow.classList.contains('student-row')) return;
+    const targetInputs = Array.from(targetRow.querySelectorAll('input.grade-input'));
+    if (idx < targetInputs.length) {
+      targetInputs[idx].focus();
+      targetInputs[idx].select();
+    }
+  }
+
   document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', (event) => {
       openTab(event, button.dataset.tab);
@@ -795,6 +837,28 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.grade-input').forEach(function(inp) {
     inp.addEventListener('input', recalcCurrentTabStats);
     inp.addEventListener('change', recalcCurrentTabStats);
+    inp.addEventListener('keydown', function(event) {
+      switch (event.key) {
+        case 'ArrowRight':
+          event.preventDefault();
+          moveToSiblingGradeInput(this, 1);
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          moveToSiblingGradeInput(this, -1);
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          moveToRowGradeInput(this, 1);
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          moveToRowGradeInput(this, -1);
+          break;
+        default:
+          break;
+      }
+    });
     
     // Not validasyonu - maksimum puanı aşmayı engelle
     inp.addEventListener('input', function() {

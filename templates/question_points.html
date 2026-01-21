@@ -343,6 +343,7 @@
                                         
                                         <label>Points:
                                             <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required 
+                                                   value="{% if points_prefill and exam_idx < points_prefill|length and q < points_prefill[exam_idx]|length and points_prefill[exam_idx][q] is not none %}{{ points_prefill[exam_idx][q] }}{% endif %}"
                                                    onchange="validatePoints(this)" oninput="validatePoints(this)">
                                         </label>
 
@@ -351,7 +352,8 @@
                                             <div class="clo-grid">
                                                 {% for idx in range(clo_count) %}
                                                     <label class="clo-option">
-                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
+                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}"
+                                                               {% if clo_prefill and exam_idx < clo_prefill|length and q < clo_prefill[exam_idx]|length and (idx + 1) in clo_prefill[exam_idx][q] %}checked{% endif %}>
                                                         <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
                                                     </label>
                                                 {% endfor %}
@@ -361,6 +363,7 @@
                                         <div style="margin-top: 10px;">
                                             <label>BL:
                                                 <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required
+                                                       value="{% if bl_prefill and exam_idx < bl_prefill|length and q < bl_prefill[exam_idx]|length and bl_prefill[exam_idx][q] is not none %}{{ bl_prefill[exam_idx][q] }}{% endif %}"
                                                        onchange="validateBL(this)" oninput="validateBL(this)">
                                             </label>
                                         </div>
