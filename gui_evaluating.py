@@ -10,8 +10,14 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
 
+# Reset database on each app start for a clean run
+RESET_DB_ON_START = True
+
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evaluation_system.db'
+os.makedirs(app.instance_path, exist_ok=True)
+DB_FILENAME = "evaluation_system.db"
+DB_FILEPATH = os.path.join(app.instance_path, DB_FILENAME)
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_FILEPATH}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -1118,7 +1124,12 @@ def summary():
         for exam_idx, exam in enumerate(exams):
             exam_score = 0
             for q_idx in range(int(exam['question_count'])):
-                exam_score += student['grades'][q_idx_counter]
+                grade_val = 0
+                if q_idx_counter < len(student.get('grades', [])):
+                    grade_val = student['grades'][q_idx_counter]
+                if grade_val is None:
+                    grade_val = 0
+                exam_score += grade_val
                 q_idx_counter += 1
             student['exam_totals'].append(round(exam_score, 2))
             
@@ -2075,8 +2086,19 @@ def restore_database(filename):
         return f"❌ Geri yükleme hatası: {str(e)}"
 
 if __name__ == "__main__":
-    # Create database tables if they don't exist
     with app.app_context():
+        if RESET_DB_ON_START:
+            db_paths = {
+                DB_FILEPATH,
+                os.path.join(app.root_path, DB_FILENAME),
+                os.path.join(os.getcwd(), DB_FILENAME),
+            }
+            for path in db_paths:
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    pass
         db.create_all()
 
     app.run(host='0.0.0.0', port=8080, debug=True)

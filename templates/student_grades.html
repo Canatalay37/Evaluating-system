@@ -69,6 +69,10 @@ input[readonly] {
   text-decoration: none; 
   display: inline-block;
 }
+.submit-btn.secondary-btn {
+  background: #6c757d !important;
+  box-shadow: none !important;
+}
 .id-col { width: 30px; }
 .student-info-col { width: 120px; }
 .question-col { width: 45px; }
@@ -628,7 +632,12 @@ input[readonly] {
   {% endfor %}
 
   <br>
-<button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+  <a href="{{ url_for('question_points') }}" class="submit-btn secondary-btn" style="text-decoration: none;">
+    ← Back to Question Points
+  </a>
+  <button type="submit" id="saveButton" class="submit-btn">Save and view summary</button>
+</div>
 </form>
 
 <script>

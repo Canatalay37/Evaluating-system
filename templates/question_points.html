@@ -204,6 +204,24 @@
             width: 100%;
             transition: all 0.3s ease;
         }
+        .submit-btn.secondary-btn {
+            background: #6c757d;
+            box-shadow: none;
+        }
+        .button-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            margin-top: 2rem;
+        }
+        .button-row .submit-btn {
+            width: auto;
+            flex: 1;
+            text-align: center;
+            margin-top: 0;
+        }
 
         .submit-btn:disabled {
             background: #6c757d;
@@ -283,6 +301,9 @@
             .card {
                 padding: 1.5rem;
                 margin: 1rem;
+            }
+            .button-row {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -378,7 +399,14 @@
                     {% endfor %}
                     
                     <!-- Submit Button -->
-                    <button type="submit" class="submit-btn" disabled>Save and Continue to Student Grades →</button>
+                    <div class="button-row">
+                        <a href="{{ url_for('exam_details') }}" class="submit-btn secondary-btn">
+                            ← Back to Exam Details
+                        </a>
+                        <button type="submit" id="saveContinueBtn" class="submit-btn" disabled>
+                            Save and Continue to Student Grades →
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -437,7 +465,7 @@
             console.log('Sayfa yüklendi, JavaScript çalışıyor...');
             
             // Submit butonunu bul
-            const submitBtn = document.querySelector('.submit-btn');
+            const submitBtn = document.getElementById('saveContinueBtn');
             if (!submitBtn) {
                 console.error('Submit butonu bulunamadı!');
                 return;
