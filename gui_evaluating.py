@@ -1441,49 +1441,49 @@ def download_clo_analysis_csv():
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
-            performance_text = "Excellent mastery with deep, higher-order thinking"
-            recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice"
+            performance_text = "Very high achievement supported by sustained higher-order cognitive engagement"
+            recommendation_text = "Maintain current instructional and assessment design; disseminate as internal benchmark practice"
         elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Excellent mastery, but mostly mid-level cognitive tasks"
-            recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach"
+            performance_text = "High achievement primarily driven by mid-level cognitive processes"
+            recommendation_text = "Increase assessment cognitive depth while preserving effective instructional structure"
         elif normalized_clo >= 85 and avg_bloom_level < 2:
-            performance_text = "Superficial mastery — strong scores from low-level tasks"
-            recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking"
+            performance_text = "High scores driven by low-cognitive-demand tasks rather than deep understanding"
+            recommendation_text = "Redesign assessments to emphasize application, analysis, and reasoning over recall"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0:
-            performance_text = "Strong achievement with rich cognitive engagement"
-            recommendation_text = "Maintain rigor; consider refining support strategies for students"
+            performance_text = "Good achievement under cognitively demanding assessment conditions"
+            recommendation_text = "Sustain cognitive rigor while strengthening instructional support mechanisms"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Strong results with balanced cognitive challenge"
-            recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills"
+            performance_text = "Adequate to good achievement with appropriately balanced cognitive demand"
+            recommendation_text = "Incrementally introduce higher-order tasks to extend learning beyond procedural competence"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2:
-            performance_text = "Strong scores with limited depth — risk of over-simplification"
-            recommendation_text = "Shift from recall-based to application/analysis-type questions"
+            performance_text = "Acceptable scores achieved through low-depth cognitive activities"
+            recommendation_text = "Replace recall-focused questions with application- and analysis-oriented tasks"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0:
-            performance_text = "Moderate learning with challenging conditions"
-            recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed"
+            performance_text = "Limited achievement despite exposure to high-level cognitive demands"
+            recommendation_text = "Enhance scaffolding, feedback, and conceptual clarity to support student success"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Moderate achievement with routine or procedural learning"
-            recommendation_text = "Revise both instruction and question difficulty for alignment"
+            performance_text = "Partial achievement based on routine or procedural learning"
+            recommendation_text = "Realign instructional delivery and assessment difficulty to improve outcome attainment"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2:
-            performance_text = "Basic understanding with very limited thinking depth"
-            recommendation_text = "Redesign instruction and assessments to encourage deep learning"
+            performance_text = "Minimal learning evidenced, restricted to recall or basic comprehension"
+            recommendation_text = "Comprehensively revise teaching strategies and assessment design to promote deeper learning"
         elif normalized_clo < 50 and avg_bloom_level > 3.0:
-            performance_text = "Poor achievement on cognitively rich tasks"
-            recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding"
+            performance_text = "Failure to meet outcomes under cognitively demanding assessments"
+            recommendation_text = "Rebuild foundational understanding and introduce progressive cognitive scaffolding"
         elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Low achievement with moderate-level assessment"
-            recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities"
+            performance_text = "Low achievement even with moderate cognitive challenge"
+            recommendation_text = "Intensify student support, adjust topic sequencing, and expand guided practice"
         elif normalized_clo < 50 and avg_bloom_level < 2:
-            performance_text = "Critical learning failure — performance and rigor are both weak"
-            recommendation_text = "Full instructional and assessment redesign needed — priority for improvement"
+            performance_text = "Severe learning deficiency with weak performance and low cognitive demand"
+            recommendation_text = "Implement full instructional and assessment redesign as an immediate improvement priority"
         else:
             performance_text = "No data available for assessment"
             recommendation_text = "Please ensure all data is properly entered"
         
         analysis_data.append({
             'CLO': clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            'Normalized CLO %': f"{normalized_clo:.2f}%",
-            'Average Bloom Level-CLO': f"{avg_bloom_level:.2f}",
+            'Normalized CLO %': f'="{normalized_clo:.2f}"'.replace('.', ','),
+            'Average Bloom Level-CLO': round(avg_bloom_level, 2),
             'Student Performance Assessment': performance_text,
             'Recommended Instructor Action': recommendation_text
         })
@@ -1614,41 +1614,41 @@ def download_all_tables():
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
-            performance_text = "Excellent mastery with deep, higher-order thinking"
-            recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice"
+            performance_text = "Very high achievement supported by sustained higher-order cognitive engagement"
+            recommendation_text = "Maintain current instructional and assessment design; disseminate as internal benchmark practice"
         elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Excellent mastery, but mostly mid-level cognitive tasks"
-            recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach"
+            performance_text = "High achievement primarily driven by mid-level cognitive processes"
+            recommendation_text = "Increase assessment cognitive depth while preserving effective instructional structure"
         elif normalized_clo >= 85 and avg_bloom_level < 2:
-            performance_text = "Superficial mastery — strong scores from low-level tasks"
-            recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking"
+            performance_text = "High scores driven by low-cognitive-demand tasks rather than deep understanding"
+            recommendation_text = "Redesign assessments to emphasize application, analysis, and reasoning over recall"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0:
-            performance_text = "Strong achievement with rich cognitive engagement"
-            recommendation_text = "Maintain rigor; consider refining support strategies for students"
+            performance_text = "Good achievement under cognitively demanding assessment conditions"
+            recommendation_text = "Sustain cognitive rigor while strengthening instructional support mechanisms"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Strong results with balanced cognitive challenge"
-            recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills"
+            performance_text = "Adequate to good achievement with appropriately balanced cognitive demand"
+            recommendation_text = "Incrementally introduce higher-order tasks to extend learning beyond procedural competence"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2:
-            performance_text = "Strong scores with limited depth — risk of over-simplification"
-            recommendation_text = "Shift from recall-based to application/analysis-type questions"
+            performance_text = "Acceptable scores achieved through low-depth cognitive activities"
+            recommendation_text = "Replace recall-focused questions with application- and analysis-oriented tasks"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0:
-            performance_text = "Moderate learning with challenging conditions"
-            recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed"
+            performance_text = "Limited achievement despite exposure to high-level cognitive demands"
+            recommendation_text = "Enhance scaffolding, feedback, and conceptual clarity to support student success"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Moderate achievement with routine or procedural learning"
-            recommendation_text = "Revise both instruction and question difficulty for alignment"
+            performance_text = "Partial achievement based on routine or procedural learning"
+            recommendation_text = "Realign instructional delivery and assessment difficulty to improve outcome attainment"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2:
-            performance_text = "Basic understanding with very limited thinking depth"
-            recommendation_text = "Redesign instruction and assessments to encourage deep learning"
+            performance_text = "Minimal learning evidenced, restricted to recall or basic comprehension"
+            recommendation_text = "Comprehensively revise teaching strategies and assessment design to promote deeper learning"
         elif normalized_clo < 50 and avg_bloom_level > 3.0:
-            performance_text = "Poor achievement on cognitively rich tasks"
-            recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding"
+            performance_text = "Failure to meet outcomes under cognitively demanding assessments"
+            recommendation_text = "Rebuild foundational understanding and introduce progressive cognitive scaffolding"
         elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Low achievement with moderate-level assessment"
-            recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities"
+            performance_text = "Low achievement even with moderate cognitive challenge"
+            recommendation_text = "Intensify student support, adjust topic sequencing, and expand guided practice"
         elif normalized_clo < 50 and avg_bloom_level < 2:
-            performance_text = "Critical learning failure — performance and rigor are both weak"
-            recommendation_text = "Full instructional and assessment redesign needed — priority for improvement"
+            performance_text = "Severe learning deficiency with weak performance and low cognitive demand"
+            recommendation_text = "Implement full instructional and assessment redesign as an immediate improvement priority"
         else:
             performance_text = "No data available for assessment"
             recommendation_text = "Please ensure all data is properly entered"
