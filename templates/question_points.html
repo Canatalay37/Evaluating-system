@@ -204,6 +204,24 @@
             width: 100%;
             transition: all 0.3s ease;
         }
+        .submit-btn.secondary-btn {
+            background: #6c757d;
+            box-shadow: none;
+        }
+        .button-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            margin-top: 2rem;
+        }
+        .button-row .submit-btn {
+            width: auto;
+            flex: 1;
+            text-align: center;
+            margin-top: 0;
+        }
 
         .submit-btn:disabled {
             background: #6c757d;
@@ -284,6 +302,9 @@
                 padding: 1.5rem;
                 margin: 1rem;
             }
+            .button-row {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
@@ -343,6 +364,7 @@
                                         
                                         <label>Points:
                                             <input type="number" name="points_{{exam_idx}}_{{q}}" min="0" max="100" required 
+                                                   value="{% if points_prefill and exam_idx < points_prefill|length and q < points_prefill[exam_idx]|length and points_prefill[exam_idx][q] is not none %}{{ points_prefill[exam_idx][q] }}{% endif %}"
                                                    onchange="validatePoints(this)" oninput="validatePoints(this)">
                                         </label>
 
@@ -351,7 +373,8 @@
                                             <div class="clo-grid">
                                                 {% for idx in range(clo_count) %}
                                                     <label class="clo-option">
-                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}">
+                                                        <input type="checkbox" name="clo_{{exam_idx}}_{{q}}" value="{{ idx + 1 }}"
+                                                               {% if clo_prefill and exam_idx < clo_prefill|length and q < clo_prefill[exam_idx]|length and (idx + 1) in clo_prefill[exam_idx][q] %}checked{% endif %}>
                                                         <span>{{ clo_names[idx] if clo_names and idx < clo_names|length else ('CLO ' ~ (idx + 1)) }}</span>
                                                     </label>
                                                 {% endfor %}
@@ -361,6 +384,7 @@
                                         <div style="margin-top: 10px;">
                                             <label>BL:
                                                 <input type="number" name="bl_{{exam_idx}}_{{q}}" min="1" max="6" step="0.1" required
+                                                       value="{% if bl_prefill and exam_idx < bl_prefill|length and q < bl_prefill[exam_idx]|length and bl_prefill[exam_idx][q] is not none %}{{ bl_prefill[exam_idx][q] }}{% endif %}"
                                                        onchange="validateBL(this)" oninput="validateBL(this)">
                                             </label>
                                         </div>
@@ -375,7 +399,14 @@
                     {% endfor %}
                     
                     <!-- Submit Button -->
-                    <button type="submit" class="submit-btn" disabled>Save and Continue to Student Grades →</button>
+                    <div class="button-row">
+                        <a href="{{ url_for('exam_details') }}" class="submit-btn secondary-btn">
+                            ← Back to Exam Details
+                        </a>
+                        <button type="submit" id="saveContinueBtn" class="submit-btn" disabled>
+                            Save and Continue to Student Grades →
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -434,7 +465,7 @@
             console.log('Sayfa yüklendi, JavaScript çalışıyor...');
             
             // Submit butonunu bul
-            const submitBtn = document.querySelector('.submit-btn');
+            const submitBtn = document.getElementById('saveContinueBtn');
             if (!submitBtn) {
                 console.error('Submit butonu bulunamadı!');
                 return;

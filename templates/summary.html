@@ -113,7 +113,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
                 <td class="total-col">{{ exam_total_stats[exam_idx]['min'] }}</td>
             </tr>
             <tr class="performance-row">
-                <th colspan="2">Student Performance Median (%)</th>
+                <th colspan="2">Student Performance Average (%)</th>
                 {% for question in all_questions_flat %}
                     {% if question.exam_idx == exam_idx %}
                         <td>{{ stats[question.global_question_idx]['performance_median'] }}</td>
@@ -171,7 +171,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
         📊 Results
     </a>
     
-    <a href="/download_all_tables" style="
+    <a href="/download_summary_csv" style="
         display: inline-block;
         padding: 12px 24px;
         background: linear-gradient(135deg, #28a745, #20c997);
@@ -184,7 +184,7 @@ tfoot td { background-color: #e9ecef; font-weight: bold; }
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(40, 167, 69, 0.3)'" 
        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)'">
-        📥 Download All Tables (CSV)
+        📥 Download Summary (CSV)
     </a>
 </div>
 

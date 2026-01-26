@@ -65,6 +65,13 @@
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
 
+        .perf-green { background-color: #28a745; color: white; }
+        .perf-yellow { background-color: #ffc107; color: black; }
+        .perf-orange { background-color: #fd7e14; color: black; }
+        .perf-red { background-color: #dc3545; color: white; }
+        .perf-gray { background-color: #6c757d; color: white; }
+        .perf-cell { font-weight: bold; padding: 8px; border-radius: 4px; }
+
         /* Information Tables Styles - Removed as tables are now hidden */
         .bl-level {
             font-weight: bold;
@@ -142,55 +149,55 @@
                         
                         {# Alt tablolardaki aralıklara göre performance ve recommendation belirleme #}
                         {% if normalized_clo >= 85 and avg_bloom_level > 3.0 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Excellent mastery with deep, higher-order thinking" %}
-                            {% set recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice" %}
+                            {% set performance_class = "perf-green" %}
+                            {% set performance_text = "Very high achievement supported by sustained higher-order cognitive engagement" %}
+                            {% set recommendation_text = "Maintain current instructional and assessment design; disseminate as internal benchmark practice" %}
                         {% elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Excellent mastery, but mostly mid-level cognitive tasks" %}
-                            {% set recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach" %}
+                            {% set performance_class = "perf-green" %}
+                            {% set performance_text = "High achievement primarily driven by mid-level cognitive processes" %}
+                            {% set recommendation_text = "Increase assessment cognitive depth while preserving effective instructional structure" %}
                         {% elif normalized_clo >= 85 and avg_bloom_level < 2 %}
-                            {% set performance_color = "#ffc107" %}
-                            {% set performance_text = "Superficial mastery — strong scores from low-level tasks" %}
-                            {% set recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking" %}
+                            {% set performance_class = "perf-green" %}
+                            {% set performance_text = "High scores driven by low-cognitive-demand tasks rather than deep understanding" %}
+                            {% set recommendation_text = "Redesign assessments to emphasize application, analysis, and reasoning over recall" %}
                         {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Strong achievement with rich cognitive engagement" %}
-                            {% set recommendation_text = "Maintain rigor; consider refining support strategies for students" %}
+                            {% set performance_class = "perf-yellow" %}
+                            {% set performance_text = "Good achievement under cognitively demanding assessment conditions" %}
+                            {% set recommendation_text = "Sustain cognitive rigor while strengthening instructional support mechanisms" %}
                         {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Strong results with balanced cognitive challenge" %}
-                            {% set recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills" %}
+                            {% set performance_class = "perf-yellow" %}
+                            {% set performance_text = "Adequate to good achievement with appropriately balanced cognitive demand" %}
+                            {% set recommendation_text = "Incrementally introduce higher-order tasks to extend learning beyond procedural competence" %}
                         {% elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2 %}
-                            {% set performance_color = "#ffc107" %}
-                            {% set performance_text = "Strong scores with limited depth — risk of over-simplification" %}
-                            {% set recommendation_text = "Shift from recall-based to application/analysis-type questions" %}
+                            {% set performance_class = "perf-yellow" %}
+                            {% set performance_text = "Acceptable scores achieved through low-depth cognitive activities" %}
+                            {% set recommendation_text = "Replace recall-focused questions with application- and analysis-oriented tasks" %}
                         {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0 %}
-                            {% set performance_color = "#ffc107" %}
-                            {% set performance_text = "Moderate learning with challenging conditions" %}
-                            {% set recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed" %}
+                            {% set performance_class = "perf-orange" %}
+                            {% set performance_text = "Limited achievement despite exposure to high-level cognitive demands" %}
+                            {% set recommendation_text = "Enhance scaffolding, feedback, and conceptual clarity to support student success" %}
                         {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Moderate achievement with routine or procedural learning" %}
-                            {% set recommendation_text = "Revise both instruction and question difficulty for alignment" %}
+                            {% set performance_class = "perf-orange" %}
+                            {% set performance_text = "Partial achievement based on routine or procedural learning" %}
+                            {% set recommendation_text = "Realign instructional delivery and assessment difficulty to improve outcome attainment" %}
                         {% elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2 %}
-                            {% set performance_color = "#ffc107" %}
-                            {% set performance_text = "Basic understanding with very limited thinking depth" %}
-                            {% set recommendation_text = "Redesign instruction and assessments to encourage deep learning" %}
+                            {% set performance_class = "perf-orange" %}
+                            {% set performance_text = "Minimal learning evidenced, restricted to recall or basic comprehension" %}
+                            {% set recommendation_text = "Comprehensively revise teaching strategies and assessment design to promote deeper learning" %}
                         {% elif normalized_clo < 50 and avg_bloom_level > 3.0 %}
-                            {% set performance_color = "#dc3545" %}
-                            {% set performance_text = "Poor achievement on cognitively rich tasks" %}
-                            {% set recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding" %}
+                            {% set performance_class = "perf-red" %}
+                            {% set performance_text = "Failure to meet outcomes under cognitively demanding assessments" %}
+                            {% set recommendation_text = "Rebuild foundational understanding and introduce progressive cognitive scaffolding" %}
                         {% elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3 %}
-                            {% set performance_color = "#28a745" %}
-                            {% set performance_text = "Low achievement with moderate-level assessment" %}
-                            {% set recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities" %}
+                            {% set performance_class = "perf-red" %}
+                            {% set performance_text = "Low achievement even with moderate cognitive challenge" %}
+                            {% set recommendation_text = "Intensify student support, adjust topic sequencing, and expand guided practice" %}
                         {% elif normalized_clo < 50 and avg_bloom_level < 2 %}
-                            {% set performance_color = "#dc3545" %}
-                            {% set performance_text = "Critical learning failure — performance and rigor are both weak" %}
-                            {% set recommendation_text = "Full instructional and assessment redesign needed — priority for improvement" %}
+                            {% set performance_class = "perf-red" %}
+                            {% set performance_text = "Severe learning deficiency with weak performance and low cognitive demand" %}
+                            {% set recommendation_text = "Implement full instructional and assessment redesign as an immediate improvement priority" %}
                         {% else %}
-                            {% set performance_color = "#6c757d" %}
+                            {% set performance_class = "perf-gray" %}
                             {% set performance_text = "No data available for assessment" %}
                             {% set recommendation_text = "Please ensure all data is properly entered" %}
                         {% endif %}
@@ -199,16 +206,16 @@
                             <td style="font-weight: bold; color: #6f42c1; padding: 8px;">
                                 {{ clo_names[clo_idx] if clo_names and clo_idx < clo_names|length else 'CLO ' ~ (clo_idx + 1) }}
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
+                            <td class="perf-cell {{ performance_class }}">
                                 {{ "%.2f"|format(normalized_clo) }}%
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px;">
+                            <td class="perf-cell {{ performance_class }}">
                                 {{ "%.2f"|format(avg_bloom_level) }}
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                            <td class="perf-cell {{ performance_class }}">
                                 {{ performance_text }}
                             </td>
-                            <td style="background-color: {{ performance_color }}; color: {% if performance_color == '#ffc107' %}black{% else %}white{% endif %}; font-weight: bold; padding: 8px; border-radius: 4px;">
+                            <td class="perf-cell {{ performance_class }}">
                                 {{ recommendation_text }}
                             </td>
                         </tr>
@@ -222,9 +229,9 @@
         <!-- Information Tables Section - Hidden but logic remains in backend -->
         <!-- Tables are now hidden from UI but the interpretation logic continues to work in CLO Analysis Results -->
 
-        <!-- Download All Tables Button -->
+        <!-- Download CLO Analysis Results Button -->
         <div class="btn-group" style="margin-top: 20px; text-align: center;">
-            <a href="/download_all_tables" class="submit-btn" style="background-color: #28a745;">📥 Tüm Tabloları İndir (CSV)</a>
+            <a href="/download_clo_analysis_csv" class="submit-btn" style="background-color: #28a745;">📥 CLO Analysis Results (CSV)</a>
         </div>
 
         <!-- Navigation Buttons -->

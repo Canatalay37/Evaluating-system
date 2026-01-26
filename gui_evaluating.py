@@ -10,10 +10,36 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
 
+# Reset database on each app start for a clean run
+RESET_DB_ON_START = True
+
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evaluation_system.db'
+os.makedirs(app.instance_path, exist_ok=True)
+DB_FILENAME = "evaluation_system.db"
+DB_FILEPATH = os.path.join(app.instance_path, DB_FILENAME)
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_FILEPATH}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+
+def format_csv_cell(cell):
+    if cell is None:
+        return ''
+    if isinstance(cell, str):
+        raw = cell.strip()
+        if raw and ('.' in raw or ',' in raw):
+            try:
+                normalized = raw.replace(',', '.')
+                numeric_value = float(normalized)
+                formatted = f"{numeric_value:.2f}".replace('.', ',')
+                return formatted
+            except ValueError:
+                pass
+        return f'"{cell.replace(chr(34), chr(34)+chr(34))}"'
+    if isinstance(cell, (int, float, np.integer, np.floating)):
+        formatted = f"{float(cell):.2f}".replace('.', ',')
+        return formatted
+    return str(cell)
 
 # Database Models
 class Course(db.Model):
@@ -90,6 +116,11 @@ def main():
         semester = request.form["semester"]
         
         exam_count = int(request.form["exam_count"])
+        clo_count = int(request.form.get("clo_count", 10))
+        clo_names = []
+        for i in range(clo_count):
+            clo_name = request.form.get(f"clo_name_{i}", f"CLO {i+1}")
+            clo_names.append(clo_name)
         # Separate student count for each exam (list)
         students_per_exam = []
         for i in range(exam_count):
@@ -100,6 +131,9 @@ def main():
                 students_per_exam.append(0)
         # Total student count (take maximum to preserve existing logic especially for student_grades)
         student_count = max(students_per_exam) if students_per_exam else 0
+
+        # Save form data for back navigation
+        session["main_form"] = {k: v for k, v in request.form.items()}
         
         # Save to database
         course = Course(
@@ -108,6 +142,12 @@ def main():
             semester=semester
         )
         db.session.add(course)
+        db.session.commit()
+
+        # Save CLOs to database
+        for i, name in enumerate(clo_names):
+            clo = CLO(course_id=course.id, name=name, order=i+1)
+            db.session.add(clo)
         db.session.commit()
         
         # Save course_id to session
@@ -118,17 +158,26 @@ def main():
         session["exam_count"] = exam_count
         session["student_count"] = student_count
         session["students_per_exam"] = students_per_exam
+        session["clo_count"] = clo_count
+        session["clo_names"] = clo_names
         session.pop("exams", None) 
         session.pop("question_points", None)
-        session.pop("clos", None) 
+        session.pop("clos", None)
         session.pop("students", None)
         session.pop("clo_q_data", None)
         session.pop("clo_results", None)
         session.pop("total_clo_results", None)
-        session.pop("clo_count", None)
-        session.pop("clo_names", None)
         return redirect(url_for("exam_details"))
-    return render_template("main.html")
+    clo_count = session.get("clo_count", 10)
+    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
+    main_form = session.get("main_form", {})
+    return render_template(
+        "main.html",
+        clo_count=clo_count,
+        clo_names=clo_names,
+        main_form=main_form,
+        students_per_exam=session.get("students_per_exam", []),
+    )
 
 @app.route("/exam_details", methods=["GET", "POST"])
 def exam_details():
@@ -140,27 +189,38 @@ def exam_details():
     if not course:
         return redirect(url_for("main"))
     
+    exam_count = session.get("exam_count", 0)
     if request.method == "POST":
-        # Process CLO configuration
-        clo_count = int(request.form.get("clo_count", 10))
-        clo_names = []
-        for i in range(clo_count):
-            clo_name = request.form.get(f"clo_name_{i}", f"CLO {i+1}")
-            clo_names.append(clo_name)
-        
-        # Save CLOs to database
-        for i, name in enumerate(clo_names):
-            clo = CLO(course_id=course_id, name=name, order=i+1)
-            db.session.add(clo)
+        session["exam_details_form"] = {k: v for k, v in request.form.items()}
+        weights = []
+        for i in range(exam_count):
+            weight_raw = request.form.get(f"weight_{i}", "0")
+            try:
+                weight_val = int(weight_raw)
+            except ValueError:
+                weight_val = 0
+            weights.append(weight_val)
+
+        total_weight = sum(weights)
+        if total_weight != 100:
+            error = f"Total exam weight is {total_weight}%. It must be exactly 100%."
+            return render_template(
+                "exam_details.html",
+                exam_count=exam_count,
+                enumerate=enumerate,
+                session=session,
+                error=error,
+                form_data=request.form,
+            )
         
         # Process exam details
         exams = []
-        for i in range(session["exam_count"]):
+        for i in range(exam_count):
             exam = Exam(
                 course_id=course_id,
                 name=request.form[f"exam_name_{i}"],
                 question_count=int(request.form[f"question_count_{i}"]),
-                weight=int(request.form[f"weight_{i}"]),
+                weight=weights[i] if i < len(weights) else 0,
                 students_per_exam=session["students_per_exam"][i]
             )
             db.session.add(exam)
@@ -170,21 +230,23 @@ def exam_details():
         
         # Update session
         session["exams"] = [{"name": e.name, "question_count": e.question_count, "weight": e.weight} for e in exams]
-        session["clo_count"] = clo_count
-        session["clo_names"] = clo_names
         
         return redirect(url_for("question_points"))
 
-    # Get existing CLO configuration for display
-    clo_count = session.get("clo_count", 10)
-    clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
-    
-    return render_template("exam_details.html", 
-                         exam_count=session.get("exam_count", 0), 
-                         clo_count=clo_count,
-                         clo_names=clo_names,
-                         enumerate=enumerate,
-                         session=session)
+    form_data = session.get("exam_details_form")
+    if not form_data and session.get("exams"):
+        form_data = {}
+        for i, exam in enumerate(session.get("exams", [])):
+            form_data[f"exam_name_{i}"] = exam.get("name", "")
+            form_data[f"question_count_{i}"] = exam.get("question_count", "")
+            form_data[f"weight_{i}"] = exam.get("weight", "")
+    return render_template(
+        "exam_details.html",
+        exam_count=exam_count,
+        enumerate=enumerate,
+        session=session,
+        form_data=form_data,
+    )
 
 @app.route("/question_points", methods=["GET", "POST"])
 def question_points():
@@ -200,6 +262,7 @@ def question_points():
     students_per_exam = session.get("students_per_exam", [])
     clo_count = session.get("clo_count", 10)
     clo_names = session.get("clo_names", [f"CLO {i+1}" for i in range(clo_count)])
+    question_points = session.get("question_points", [])
     
     if not exams:
         return redirect(url_for("exam_details"))
@@ -276,6 +339,30 @@ def question_points():
         session["question_points"] = question_points_list
         return redirect(url_for("student_grades"))
     
+    points_prefill = []
+    bl_prefill = []
+    clo_prefill = []
+    for exam_idx, exam in enumerate(exams):
+        q_count = int(exam["question_count"])
+        points_row = [None] * q_count
+        bl_row = [None] * q_count
+        clo_row = [set() for _ in range(q_count)]
+        if question_points and exam_idx < len(question_points):
+            for rec in question_points[exam_idx]:
+                q_idx = rec.get("question_idx")
+                if q_idx is None or q_idx >= q_count:
+                    continue
+                if points_row[q_idx] is None:
+                    points_row[q_idx] = rec.get("points")
+                if bl_row[q_idx] is None:
+                    bl_row[q_idx] = rec.get("bl")
+                clo_val = rec.get("clo")
+                if clo_val:
+                    clo_row[q_idx].add(clo_val)
+        points_prefill.append(points_row)
+        bl_prefill.append(bl_row)
+        clo_prefill.append([sorted(list(s)) for s in clo_row])
+
     return render_template(
         "question_points.html",
         exams=exams,
@@ -284,6 +371,9 @@ def question_points():
         students_per_exam=students_per_exam,
         enumerate=enumerate,
         session=session,
+        points_prefill=points_prefill,
+        bl_prefill=bl_prefill,
+        clo_prefill=clo_prefill,
     )
 
 @app.route("/student_grades", methods=["GET", "POST"])
@@ -419,7 +509,7 @@ def student_grades():
             question_performance_medians = session.get("question_performance_medians", [])
             clo_results = []
             for clo_idx in range(1, clo_count+1):
-                qct_list, w_list, spm_list, bl_list = [], [], [], []
+                qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
                 for exam_idx, exam in enumerate(exams):
                     for q in range(exam["question_count"]):
                         global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -427,14 +517,21 @@ def student_grades():
                         w = clo_q_data[clo_idx-1][global_q_idx]['w']
                         spm = clo_q_data[clo_idx-1][global_q_idx]['spm']
                         bl = clo_q_data[clo_idx-1][global_q_idx]['bl']
+                        ep_val = 0.0
+                        if exam_idx < len(question_points_nested):
+                            for q_rec in question_points_nested[exam_idx]:
+                                if q_rec.get('question_idx') == q:
+                                    ep_val = q_rec.get('points', 0)
+                                    break
                         qct_list.append(qct)
                         w_list.append(w)
                         spm_list.append(spm)
                         bl_list.append(bl)
+                        ep_list.append(ep_val)
                 clo_results.append({
                     "max_clo_score": max_possible_clo_score(qct_list, w_list),
                     "weighted_clo_score": weighted_clo_score(qct_list, w_list, spm_list),
-                    "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list),
+                    "normalized_clo_score": normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list),
                     "weighted_bloom_score": weighted_bloom_score(qct_list, w_list, bl_list),
                     "average_bloom_score": average_bloom_score(qct_list, w_list, bl_list)
                 })
@@ -460,9 +557,11 @@ def student_grades():
                     for q_idx_in_exam in range(int(exam['question_count'])):
                         grades_for_question = []
                         for student in students:
-                            if (global_q_idx_counter < len(student['grades']) and 
-                                student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                grades_for_question.append(student['grades'][global_q_idx_counter])
+                            if global_q_idx_counter < len(student['grades']):
+                                grade_val = student['grades'][global_q_idx_counter]
+                                if grade_val is None or grade_val == '':
+                                    continue
+                                grades_for_question.append(grade_val)
                         
                         spm_val = 0.0
                         if grades_for_question:
@@ -474,8 +573,8 @@ def student_grades():
                                     break
                             
                             if max_points > 0:
-                                median_val = np.median(grades_for_question)
-                                spm_val = round((median_val / max_points) * 100, 2)
+                                avg_val = np.mean(grades_for_question)
+                                spm_val = round((avg_val / max_points) * 100, 2)
                         
                         question_performance_medians.append(spm_val)
                         global_q_idx_counter += 1
@@ -615,9 +714,11 @@ def student_grades():
                                 students = session['students']
                                 grades_for_question = []
                                 for student in students:
-                                    if (global_q_idx_counter < len(student['grades']) and 
-                                        student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                        grades_for_question.append(student['grades'][global_q_idx_counter])
+                                    if global_q_idx_counter < len(student['grades']):
+                                        grade_val = student['grades'][global_q_idx_counter]
+                                        if grade_val is None or grade_val == '':
+                                            continue
+                                        grades_for_question.append(grade_val)
                                 
                                 if grades_for_question:
                                     # Max points'i bul
@@ -628,8 +729,8 @@ def student_grades():
                                             break
                                     
                                     if max_points > 0:
-                                        median_val = np.median(grades_for_question)
-                                        spm_val = round((median_val / max_points) * 100, 2)
+                                        avg_val = np.mean(grades_for_question)
+                                        spm_val = round((avg_val / max_points) * 100, 2)
                             else:
                                 # If no student data, get from question_performance_medians
                                 question_performance_medians = session.get("question_performance_medians", [])
@@ -661,7 +762,7 @@ def student_grades():
     if not clo_results:
         clo_results = []
         for clo_idx in range(1, clo_count+1):
-            qct_list, w_list, spm_list, bl_list = [], [], [], []
+            qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
             for exam_idx, exam in enumerate(exams):
                 for q in range(exam["question_count"]):
                     global_q_idx = all_questions_flat_map[exam_idx][q]
@@ -684,15 +785,17 @@ def student_grades():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx < len(student['grades']) and 
-                                    student['grades'][global_q_idx] not in [0, 0.0, '', None]):
-                                    grades_for_question.append(student['grades'][global_q_idx])
+                                if global_q_idx < len(student['grades']):
+                                    grade_val = student['grades'][global_q_idx]
+                                    if grade_val is None or grade_val == '':
+                                        continue
+                                    grades_for_question.append(grade_val)
                             
                             if grades_for_question:
                                 max_points = rec.get('points', 0)
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm = round((median_val / max_points) * 100, 2)
+                                    avg_val = np.mean(grades_for_question)
+                                    spm = round((avg_val / max_points) * 100, 2)
                         
                         # Sadece bu CLO'ya ait olan soruları ekle
                         if qct > 0 and w > 0:
@@ -700,11 +803,12 @@ def student_grades():
                             w_list.append(w)
                             spm_list.append(spm)
                             bl_list.append(bl)
+                            ep_list.append(rec.get('points', 0))
             
             # CLO Score hesaplamaları
             max_clo = max_possible_clo_score(qct_list, w_list)
             weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
             weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
             avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
             
@@ -799,9 +903,11 @@ def bloom_mapping():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx_counter < len(student['grades']) and 
-                                    student['grades'][global_q_idx_counter] not in [0, 0.0, '', None]):
-                                    grades_for_question.append(student['grades'][global_q_idx_counter])
+                                if global_q_idx_counter < len(student['grades']):
+                                    grade_val = student['grades'][global_q_idx_counter]
+                                    if grade_val is None or grade_val == '':
+                                        continue
+                                    grades_for_question.append(grade_val)
                             
                             if grades_for_question:
                                 # Max points'i bul
@@ -812,8 +918,8 @@ def bloom_mapping():
                                         break
                                 
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm_val = round((median_val / max_points) * 100, 2)
+                                    avg_val = np.mean(grades_for_question)
+                                    spm_val = round((avg_val / max_points) * 100, 2)
                         else:
                             # If no student data, get from question_performance_medians
                             question_performance_medians = session.get("question_performance_medians", [])
@@ -845,7 +951,7 @@ def bloom_mapping():
         # Calculate clo_results
         clo_results = []
         for clo_idx in range(1, clo_count+1):
-            qct_list, w_list, spm_list, bl_list = [], [], [], []
+            qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
             
             # Scan all questions for this CLO
             for exam_idx, exam in enumerate(exams):
@@ -877,21 +983,19 @@ def bloom_mapping():
                             students = session['students']
                             grades_for_question = []
                             for student in students:
-                                if (global_q_idx < len(student['grades']) and 
-                                    student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                                if global_q_idx < len(student['grades']):
                                     try:
                                         grade_val = float(student['grades'][global_q_idx])
-                                        if grade_val > 0:
-                                            grades_for_question.append(grade_val)
+                                        grades_for_question.append(grade_val)
                                     except (ValueError, TypeError):
                                         continue
                             
                             if grades_for_question:
                                 max_points = rec.get('points', 0)
                                 if max_points > 0:
-                                    median_val = np.median(grades_for_question)
-                                    spm = round((median_val / max_points) * 100, 2)
-                                    print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, median={median_val}, max_points={max_points}, SPM={spm}")
+                                    avg_val = np.mean(grades_for_question)
+                                    spm = round((avg_val / max_points) * 100, 2)
+                                    print(f"CLO {clo_idx}, Q{q+1}: grades={grades_for_question}, avg={avg_val}, max_points={max_points}, SPM={spm}")
                                 else:
                                     print(f"CLO {clo_idx}, Q{q+1}: max_points is 0")
                                     spm = 50.0  # Default 50% performance
@@ -910,13 +1014,14 @@ def bloom_mapping():
                             w_list.append(w)
                             spm_list.append(spm)
                             bl_list.append(bl)
+                            ep_list.append(rec.get('points', 0))
                             
                             print(f"CLO {clo_idx}, Q{q+1}: QCT={qct}, W={w}, SPM={spm}, BL={bl}")
             
             # CLO Score hesaplamaları
             max_clo = max_possible_clo_score(qct_list, w_list)
             weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+            normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
             weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
             avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
             
@@ -1019,7 +1124,12 @@ def summary():
         for exam_idx, exam in enumerate(exams):
             exam_score = 0
             for q_idx in range(int(exam['question_count'])):
-                exam_score += student['grades'][q_idx_counter]
+                grade_val = 0
+                if q_idx_counter < len(student.get('grades', [])):
+                    grade_val = student['grades'][q_idx_counter]
+                if grade_val is None:
+                    grade_val = 0
+                exam_score += grade_val
                 q_idx_counter += 1
             student['exam_totals'].append(round(exam_score, 2))
             
@@ -1032,7 +1142,7 @@ def summary():
     exam_total_stats = []
 
     global_q_idx_counter = 0
-    question_performance_medians = []  # Yeni: her soru için medyanı burada topla
+    question_performance_medians = []  # Yeni: her soru için ortalamayı burada topla
     for exam_idx, exam in enumerate(exams):
         exam_grades = []
         total_possible_points_for_exam = 0
@@ -1059,16 +1169,17 @@ def summary():
             grades_for_question = [g for g in grades_for_question if g is not None]
 
             if grades_for_question:
+                avg_val = np.mean(grades_for_question)
                 median_val = np.median(grades_for_question)
-                perf_median = round((median_val / max_points) * 100, 2) if max_points > 0 else 0
+                perf_avg = round((avg_val / max_points) * 100, 2) if max_points > 0 else 0
                 stats.append({
-                    'avg': round(np.mean(grades_for_question), 2),
+                    'avg': round(avg_val, 2),
                     'median': round(median_val, 2),
                     'max': round(np.max(grades_for_question), 2),
                     'min': round(np.min(grades_for_question), 2),
-                    'performance_median': perf_median
+                    'performance_median': perf_avg
                 })
-                question_performance_medians.append(perf_median)
+                question_performance_medians.append(perf_avg)
             else:
                 stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
                 question_performance_medians.append(0)
@@ -1081,13 +1192,14 @@ def summary():
         exam_totals_list = [t for t in exam_totals_list if t is not None]
 
         if exam_totals_list:
+            avg_exam_total = np.mean(exam_totals_list)
             median_exam_total = np.median(exam_totals_list)
             exam_total_stats.append({
-                'avg': round(np.mean(exam_totals_list), 2),
+                'avg': round(avg_exam_total, 2),
                 'median': round(median_exam_total, 2),
                 'max': round(np.max(exam_totals_list), 2),
                 'min': round(np.min(exam_totals_list), 2),
-                'performance_median': round((median_exam_total / total_possible_points_for_exam) * 100, 2) if total_possible_points_for_exam > 0 else 0
+                'performance_median': round((avg_exam_total / total_possible_points_for_exam) * 100, 2) if total_possible_points_for_exam > 0 else 0
             })
         else:
             exam_total_stats.append({'avg': 0, 'median': 0, 'max': 0, 'min': 0, 'performance_median': 0})
@@ -1111,7 +1223,7 @@ def summary():
     # CLO hesaplamalarını yap
     clo_results = []
     for clo_idx in range(1, clo_count+1):
-        qct_list, w_list, spm_list, bl_list = [], [], [], []
+        qct_list, w_list, spm_list, bl_list, ep_list = [], [], [], [], []
         
         # Scan all questions for this CLO
         for exam_idx, exam in enumerate(exams):
@@ -1135,20 +1247,18 @@ def summary():
                     if students:
                         grades_for_question = []
                         for student in students:
-                            if (global_q_idx < len(student['grades']) and 
-                                student['grades'][global_q_idx] not in [0, 0.0, '', None, '']):
+                            if global_q_idx < len(student['grades']):
                                 try:
                                     grade_val = float(student['grades'][global_q_idx])
-                                    if grade_val > 0:
-                                        grades_for_question.append(grade_val)
+                                    grades_for_question.append(grade_val)
                                 except (ValueError, TypeError):
                                     continue
                         
                         if grades_for_question:
                             max_points = rec.get('points', 0)
                             if max_points > 0:
-                                median_val = np.median(grades_for_question)
-                                spm = round((median_val / max_points) * 100, 2)
+                                avg_val = np.mean(grades_for_question)
+                                spm = round((avg_val / max_points) * 100, 2)
                     
                     # Sadece bu CLO'ya ait olan soruları ekle
                     if qct > 0 and w > 0:
@@ -1156,11 +1266,12 @@ def summary():
                         w_list.append(w)
                         spm_list.append(spm)
                         bl_list.append(bl)
+                        ep_list.append(rec.get('points', 0))
         
         # CLO Score hesaplamaları
         max_clo = max_possible_clo_score(qct_list, w_list)
         weighted_clo = weighted_clo_score(qct_list, w_list, spm_list)
-        normalized_clo = normalized_clo_score(qct_list, w_list, spm_list)
+        normalized_clo = normalized_clo_score(qct_list, w_list, spm_list, bl_list, ep_list)
         weighted_bloom = weighted_bloom_score(qct_list, w_list, bl_list)
         avg_bloom = average_bloom_score(qct_list, w_list, bl_list)
         
@@ -1245,10 +1356,7 @@ def download_csv(exam_index):
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1294,10 +1402,7 @@ def download_clo_csv():
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1336,49 +1441,49 @@ def download_clo_analysis_csv():
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
-            performance_text = "Excellent mastery with deep, higher-order thinking"
-            recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice"
+            performance_text = "Very high achievement supported by sustained higher-order cognitive engagement"
+            recommendation_text = "Maintain current instructional and assessment design; disseminate as internal benchmark practice"
         elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Excellent mastery, but mostly mid-level cognitive tasks"
-            recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach"
+            performance_text = "High achievement primarily driven by mid-level cognitive processes"
+            recommendation_text = "Increase assessment cognitive depth while preserving effective instructional structure"
         elif normalized_clo >= 85 and avg_bloom_level < 2:
-            performance_text = "Superficial mastery — strong scores from low-level tasks"
-            recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking"
+            performance_text = "High scores driven by low-cognitive-demand tasks rather than deep understanding"
+            recommendation_text = "Redesign assessments to emphasize application, analysis, and reasoning over recall"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0:
-            performance_text = "Strong achievement with rich cognitive engagement"
-            recommendation_text = "Maintain rigor; consider refining support strategies for students"
+            performance_text = "Good achievement under cognitively demanding assessment conditions"
+            recommendation_text = "Sustain cognitive rigor while strengthening instructional support mechanisms"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Strong results with balanced cognitive challenge"
-            recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills"
+            performance_text = "Adequate to good achievement with appropriately balanced cognitive demand"
+            recommendation_text = "Incrementally introduce higher-order tasks to extend learning beyond procedural competence"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2:
-            performance_text = "Strong scores with limited depth — risk of over-simplification"
-            recommendation_text = "Shift from recall-based to application/analysis-type questions"
+            performance_text = "Acceptable scores achieved through low-depth cognitive activities"
+            recommendation_text = "Replace recall-focused questions with application- and analysis-oriented tasks"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0:
-            performance_text = "Moderate learning with challenging conditions"
-            recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed"
+            performance_text = "Limited achievement despite exposure to high-level cognitive demands"
+            recommendation_text = "Enhance scaffolding, feedback, and conceptual clarity to support student success"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Moderate achievement with routine or procedural learning"
-            recommendation_text = "Revise both instruction and question difficulty for alignment"
+            performance_text = "Partial achievement based on routine or procedural learning"
+            recommendation_text = "Realign instructional delivery and assessment difficulty to improve outcome attainment"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2:
-            performance_text = "Basic understanding with very limited thinking depth"
-            recommendation_text = "Redesign instruction and assessments to encourage deep learning"
+            performance_text = "Minimal learning evidenced, restricted to recall or basic comprehension"
+            recommendation_text = "Comprehensively revise teaching strategies and assessment design to promote deeper learning"
         elif normalized_clo < 50 and avg_bloom_level > 3.0:
-            performance_text = "Poor achievement on cognitively rich tasks"
-            recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding"
+            performance_text = "Failure to meet outcomes under cognitively demanding assessments"
+            recommendation_text = "Rebuild foundational understanding and introduce progressive cognitive scaffolding"
         elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Low achievement with moderate-level assessment"
-            recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities"
+            performance_text = "Low achievement even with moderate cognitive challenge"
+            recommendation_text = "Intensify student support, adjust topic sequencing, and expand guided practice"
         elif normalized_clo < 50 and avg_bloom_level < 2:
-            performance_text = "Critical learning failure — performance and rigor are both weak"
-            recommendation_text = "Full instructional and assessment redesign needed — priority for improvement"
+            performance_text = "Severe learning deficiency with weak performance and low cognitive demand"
+            recommendation_text = "Implement full instructional and assessment redesign as an immediate improvement priority"
         else:
             performance_text = "No data available for assessment"
             recommendation_text = "Please ensure all data is properly entered"
         
         analysis_data.append({
             'CLO': clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            'Normalized CLO %': f"{normalized_clo:.2f}%",
-            'Average Bloom Level-CLO': f"{avg_bloom_level:.2f}",
+            'Normalized CLO %': f'="{normalized_clo:.2f}"'.replace('.', ','),
+            'Average Bloom Level-CLO': round(avg_bloom_level, 2),
             'Student Performance Assessment': performance_text,
             'Recommended Instructor Action': recommendation_text
         })
@@ -1395,10 +1500,7 @@ def download_clo_analysis_csv():
             csv_row = []
             for header in headers:
                 cell = row.get(header, '')
-                if isinstance(cell, str):
-                    csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-                else:
-                    csv_row.append(str(cell))
+                csv_row.append(format_csv_cell(cell))
             output.write(';'.join(csv_row) + '\n')
     
     bom = '\ufeff'
@@ -1488,10 +1590,10 @@ def download_all_tables():
         clo_result = clo_results[clo_idx]
         row = [
             clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            f"{clo_result.get('max_clo_score', 0):.3f}",
-            f"{clo_result.get('weighted_clo_score', 0):.3f}",
-            f"{clo_result.get('average_bloom_score', 0):.3f}",
-            f"{clo_result.get('weighted_bloom_score', 0):.2f}"
+            clo_result.get('max_clo_score', 0),
+            clo_result.get('weighted_clo_score', 0),
+            clo_result.get('average_bloom_score', 0),
+            clo_result.get('weighted_bloom_score', 0),
         ]
         all_rows.append(row)
     
@@ -1512,51 +1614,51 @@ def download_all_tables():
         
         # Performance ve recommendation belirleme
         if normalized_clo >= 85 and avg_bloom_level > 3.0:
-            performance_text = "Excellent mastery with deep, higher-order thinking"
-            recommendation_text = "Maintain teaching and assessment strategy; consider sharing as best practice"
+            performance_text = "Very high achievement supported by sustained higher-order cognitive engagement"
+            recommendation_text = "Maintain current instructional and assessment design; disseminate as internal benchmark practice"
         elif normalized_clo >= 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Excellent mastery, but mostly mid-level cognitive tasks"
-            recommendation_text = "Improve assessment depth (add BL 4 questions) while retaining core approach"
+            performance_text = "High achievement primarily driven by mid-level cognitive processes"
+            recommendation_text = "Increase assessment cognitive depth while preserving effective instructional structure"
         elif normalized_clo >= 85 and avg_bloom_level < 2:
-            performance_text = "Superficial mastery — strong scores from low-level tasks"
-            recommendation_text = "Replace low-level assessments with tasks that demand higher-order thinking"
+            performance_text = "High scores driven by low-cognitive-demand tasks rather than deep understanding"
+            recommendation_text = "Redesign assessments to emphasize application, analysis, and reasoning over recall"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level > 3.0:
-            performance_text = "Strong achievement with rich cognitive engagement"
-            recommendation_text = "Maintain rigor; consider refining support strategies for students"
+            performance_text = "Good achievement under cognitively demanding assessment conditions"
+            recommendation_text = "Sustain cognitive rigor while strengthening instructional support mechanisms"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Strong results with balanced cognitive challenge"
-            recommendation_text = "Introduce more Bloom Level 3+ tasks to push students beyond procedural skills"
+            performance_text = "Adequate to good achievement with appropriately balanced cognitive demand"
+            recommendation_text = "Incrementally introduce higher-order tasks to extend learning beyond procedural competence"
         elif normalized_clo >= 70 and normalized_clo < 85 and avg_bloom_level < 2:
-            performance_text = "Strong scores with limited depth — risk of over-simplification"
-            recommendation_text = "Shift from recall-based to application/analysis-type questions"
+            performance_text = "Acceptable scores achieved through low-depth cognitive activities"
+            recommendation_text = "Replace recall-focused questions with application- and analysis-oriented tasks"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level > 3.0:
-            performance_text = "Moderate learning with challenging conditions"
-            recommendation_text = "Offer better scaffolding and conceptual clarity to help students succeed"
+            performance_text = "Limited achievement despite exposure to high-level cognitive demands"
+            recommendation_text = "Enhance scaffolding, feedback, and conceptual clarity to support student success"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Moderate achievement with routine or procedural learning"
-            recommendation_text = "Revise both instruction and question difficulty for alignment"
+            performance_text = "Partial achievement based on routine or procedural learning"
+            recommendation_text = "Realign instructional delivery and assessment difficulty to improve outcome attainment"
         elif normalized_clo >= 50 and normalized_clo < 70 and avg_bloom_level < 2:
-            performance_text = "Basic understanding with very limited thinking depth"
-            recommendation_text = "Redesign instruction and assessments to encourage deep learning"
+            performance_text = "Minimal learning evidenced, restricted to recall or basic comprehension"
+            recommendation_text = "Comprehensively revise teaching strategies and assessment design to promote deeper learning"
         elif normalized_clo < 50 and avg_bloom_level > 3.0:
-            performance_text = "Poor achievement on cognitively rich tasks"
-            recommendation_text = "Strengthen foundational teaching and reinforce cognitive scaffolding"
+            performance_text = "Failure to meet outcomes under cognitively demanding assessments"
+            recommendation_text = "Rebuild foundational understanding and introduce progressive cognitive scaffolding"
         elif normalized_clo < 50 and avg_bloom_level >= 2 and avg_bloom_level <= 3:
-            performance_text = "Low achievement with moderate-level assessment"
-            recommendation_text = "Increase student support; revisit topic sequencing, and practice opportunities"
+            performance_text = "Low achievement even with moderate cognitive challenge"
+            recommendation_text = "Intensify student support, adjust topic sequencing, and expand guided practice"
         elif normalized_clo < 50 and avg_bloom_level < 2:
-            performance_text = "Critical learning failure — performance and rigor are both weak"
-            recommendation_text = "Full instructional and assessment redesign needed — priority for improvement"
+            performance_text = "Severe learning deficiency with weak performance and low cognitive demand"
+            recommendation_text = "Implement full instructional and assessment redesign as an immediate improvement priority"
         else:
             performance_text = "No data available for assessment"
             recommendation_text = "Please ensure all data is properly entered"
         
         row = [
             clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
-            f"{normalized_clo:.2f}%",
-            f"{avg_bloom_level:.2f}",
+            f"{normalized_clo:.2f}".replace('.', ',') + '%',
+            avg_bloom_level,
             performance_text,
-            recommendation_text
+            recommendation_text,
         ]
         all_rows.append(row)
     
@@ -1566,11 +1668,7 @@ def download_all_tables():
         # Her satırı CSV formatında yaz
         csv_row = []
         for cell in row:
-            if isinstance(cell, str):
-                # String değerleri tırnak içine al ve virgülleri escape et
-                csv_row.append(f'"{cell.replace(chr(34), chr(34)+chr(34))}"')
-            else:
-                csv_row.append(str(cell))
+            csv_row.append(format_csv_cell(cell))
         output.write(';'.join(csv_row) + '\n')
     
     # BOM ekle (Türkçe karakterler için)
@@ -1583,6 +1681,139 @@ def download_all_tables():
     response.headers["Content-Disposition"] = f"attachment; filename={course_code}_all_tables.csv"
     response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
     
+    return response
+
+
+@app.route("/download_summary_csv")
+def download_summary_csv():
+    """Summary sayfasındaki tablolar + CLO Performance Values CSV"""
+    course_id = session.get("course_id")
+    if not course_id:
+        return "Gerekli veriler bulunamadı.", 404
+
+    course = Course.query.get(course_id)
+    if not course:
+        return "Kurs bulunamadı.", 404
+
+    exams = session.get("exams", []) or course.exams
+    students = session.get('students', [])
+    clo_results = session.get('clo_results', [])
+    clo_names = session.get('clo_names', [])
+    all_questions_flat = session.get('all_questions_flat', [])
+    stats = session.get('stats', [])
+    exam_total_stats = session.get('exam_total_stats', [])
+
+    if not exams or not students:
+        return "Gerekli veriler bulunamadı.", 404
+
+    all_rows = []
+
+    # 1. Summary tables (per exam)
+    all_rows.append([])
+    all_rows.append(['SUMMARY TABLES'])
+    all_rows.append([])
+
+    for exam_idx, exam in enumerate(exams):
+        exam_name = exam['name'] if isinstance(exam, dict) else exam.name
+        all_rows.append([f"{exam_name} Exam"])
+
+        headers = ['Student No', 'Name']
+        for question in all_questions_flat:
+            if question['exam_idx'] == exam_idx:
+                headers.append(f"Question {question['question_idx_in_exam'] + 1}")
+        headers.append('Exam Total')
+        all_rows.append(headers)
+
+        for student in students:
+            row = [student.get('number', ''), student.get('name', '')]
+            for question in all_questions_flat:
+                if question['exam_idx'] == exam_idx:
+                    grade = student['grades'][question['global_question_idx']] if question['global_question_idx'] < len(student['grades']) else 0
+                    row.append(grade)
+            exam_total = student.get('exam_totals', [])[exam_idx] if exam_idx < len(student.get('exam_totals', [])) else 0
+            row.append(exam_total)
+            all_rows.append(row)
+
+        # Stats rows
+        if stats and exam_total_stats and exam_idx < len(exam_total_stats):
+            avg_row = ['Average', '']
+            median_row = ['Median', '']
+            max_row = ['Max', '']
+            min_row = ['Min', '']
+            perf_row = ['Student Performance Average (%)', '']
+            for question in all_questions_flat:
+                if question['exam_idx'] == exam_idx:
+                    q_stats = stats[question['global_question_idx']]
+                    avg_row.append(q_stats.get('avg', 0))
+                    median_row.append(q_stats.get('median', 0))
+                    max_row.append(q_stats.get('max', 0))
+                    min_row.append(q_stats.get('min', 0))
+                    perf_row.append(q_stats.get('performance_median', 0))
+            avg_row.append(exam_total_stats[exam_idx].get('avg', 0))
+            median_row.append(exam_total_stats[exam_idx].get('median', 0))
+            max_row.append(exam_total_stats[exam_idx].get('max', 0))
+            min_row.append(exam_total_stats[exam_idx].get('min', 0))
+            perf_row.append(exam_total_stats[exam_idx].get('performance_median', 0))
+
+            all_rows.append(avg_row)
+            all_rows.append(median_row)
+            all_rows.append(max_row)
+            all_rows.append(min_row)
+            all_rows.append(perf_row)
+
+        all_rows.append([])
+
+    # 2. Overall Results table
+    all_rows.append(['OVERALL RESULTS'])
+    overall_headers = ['Student No', 'Name']
+    for exam in exams:
+        exam_name = exam['name'] if isinstance(exam, dict) else exam.name
+        exam_weight = exam['weight'] if isinstance(exam, dict) else exam.weight
+        overall_headers.append(f"{exam_name} Notu ({exam_weight}%)")
+    overall_headers.append('Overall Total (100)')
+    all_rows.append(overall_headers)
+
+    for student in students:
+        row = [student.get('number', ''), student.get('name', '')]
+        for exam_total in student.get('exam_totals', []):
+            row.append(exam_total)
+        row.append(student.get('overall_total', 0))
+        all_rows.append(row)
+
+    # 3. CLO Performance Values Table
+    all_rows.append([])
+    all_rows.append(['CLO PERFORMANCE VALUES TABLE'])
+    all_rows.append([])
+
+    clo_performance_headers = ['CLO', 'Max CLO Score', 'CLO Score', 'MW-BL', 'Weighted BL Sum']
+    all_rows.append(clo_performance_headers)
+
+    for clo_idx in range(len(clo_results)):
+        clo_result = clo_results[clo_idx]
+        row = [
+            clo_names[clo_idx] if clo_idx < len(clo_names) else f'CLO {clo_idx + 1}',
+            clo_result.get('max_clo_score', 0),
+            clo_result.get('weighted_clo_score', 0),
+            clo_result.get('average_bloom_score', 0),
+            clo_result.get('weighted_bloom_score', 0),
+        ]
+        all_rows.append(row)
+
+    output = io.StringIO()
+    for row in all_rows:
+        csv_row = []
+        for cell in row:
+            csv_row.append(format_csv_cell(cell))
+        output.write(';'.join(csv_row) + '\n')
+
+    bom = '\ufeff'
+    csv_output = bom + output.getvalue()
+
+    response = make_response(csv_output)
+    course_code = course.course_code
+    response.headers["Content-Disposition"] = f"attachment; filename={course_code}_summary_tables.csv"
+    response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+
     return response
 
 # MANUAL CALCULATION FUNCTIONS (numpy replacement)
@@ -1628,45 +1859,32 @@ def weighted_clo_score(qct_list, w_list, spm_list):
         return 0
     return sum((qct / 100) * w * (spm / 100) for qct, w, spm in zip(qct_list, w_list, spm_list))
 
-def normalized_clo_score(qct_list, w_list, spm_list):
-    """Normalize edilmiş CLO skoru hesapla - yüzde olarak"""
-    if not qct_list or not w_list or not spm_list or len(qct_list) != len(w_list) or len(w_list) != len(spm_list):
-        print(f"normalized_clo_score: Invalid input lengths - qct:{len(qct_list)}, w:{len(w_list)}, spm:{len(spm_list)}")
+def normalized_clo_score(qct_list, w_list, spm_list, bl_list=None, ep_list=None):
+    """Normalize edilmiş CLO skoru hesapla - yüzde olarak (BL ağırlıklı)"""
+    if (not w_list or not spm_list or not qct_list or not bl_list or
+        len(qct_list) != len(w_list) or len(w_list) != len(spm_list) or len(spm_list) != len(bl_list)):
+        print(
+            "normalized_clo_score: Invalid input lengths - "
+            f"qct:{len(qct_list)}, w:{len(w_list)}, spm:{len(spm_list)}, bl:{len(bl_list)}"
+        )
         return 0
-    
-    print(f"normalized_clo_score: Input data - qct_list: {qct_list}, w_list: {w_list}, spm_list: {spm_list}")
-    
-    # Sadece pozitif değerleri olan soruları al
-    valid_data = [(qct, w, spm) for qct, w, spm in zip(qct_list, w_list, spm_list) if qct > 0 and w > 0]
-    
-    print(f"normalized_clo_score: valid_data = {valid_data}")
-    
-    if not valid_data:
-        print("normalized_clo_score: No valid data found - all qct or w values are 0 or negative")
-        return 0
-    
-    # Normalized CLO Score = (Weighted CLO Score / Max Possible CLO Score) * 100
-    weighted_score = sum((qct / 100) * w * (spm / 100) for qct, w, spm in valid_data)
-    max_score = sum((qct / 100) * w for qct, w, _ in valid_data)
-    
-    print(f"normalized_clo_score: weighted_score = {weighted_score}, max_score = {max_score}")
-    
-    # Detaylı hesaplama adımlarını göster
-    print("normalized_clo_score: Detailed calculation steps:")
-    for i, (qct, w, spm) in enumerate(valid_data):
-        qct_term = (qct / 100) * w
-        spm_term = (qct / 100) * w * (spm / 100)
-        print(f"  Item {i+1}: QCT={qct}, W={w}, SPM={spm}")
-        print(f"    QCT term: ({qct}/100) * {w} = {qct_term}")
-        print(f"    SPM term: ({qct}/100) * {w} * ({spm}/100) = {spm_term}")
-    
-    if max_score > 0:
-        result = (weighted_score / max_score) * 100
-        print(f"normalized_clo_score: Final calculation: ({weighted_score} / {max_score}) * 100 = {result}")
+
+    # Normalized CLO % = SUMPRODUCT(CLO Score, Bloom Weight) / SUMPRODUCT(Max CLO Score, Bloom Weight) * 100
+    # CLO Score per question = (QCT/100) * W * (SPM/100)
+    # Max CLO Score per question = (QCT/100) * W
+    # Bloom Weight is a percentage; convert to coefficient by dividing by 100
+    numerator = sum((qct / 100) * w * (spm / 100) * (bl / 100) for qct, w, spm, bl in zip(qct_list, w_list, spm_list, bl_list))
+    denominator = sum((qct / 100) * w * (bl / 100) for qct, w, bl in zip(qct_list, w_list, bl_list))
+
+    print(f"normalized_clo_score: numerator = {numerator}, denominator = {denominator}")
+
+    if denominator > 0:
+        result = (numerator / denominator) * 100
+        print(f"normalized_clo_score: Final calculation: ({numerator} / {denominator}) * 100 = {result}")
         return result
-    else:
-        print("normalized_clo_score: max_score is 0 - this should not happen with valid data")
-        return 0
+
+    print("normalized_clo_score: denominator is 0 - this should not happen with valid data")
+    return 0
 
 def weighted_bloom_score(qct_list, w_list, bl_list):
     """Ağırlıklı Bloom skoru hesapla"""
@@ -1868,11 +2086,23 @@ def restore_database(filename):
         return f"❌ Geri yükleme hatası: {str(e)}"
 
 if __name__ == "__main__":
-    # Create database tables if they don't exist
     with app.app_context():
+        if RESET_DB_ON_START:
+            db_paths = {
+                DB_FILEPATH,
+                os.path.join(app.root_path, DB_FILENAME),
+                os.path.join(os.getcwd(), DB_FILENAME),
+            }
+            for path in db_paths:
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    pass
         db.create_all()
 
     app.run(host='0.0.0.0', port=8080, debug=True)
+    
     
     
     
