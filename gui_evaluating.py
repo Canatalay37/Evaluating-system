@@ -1346,6 +1346,7 @@ def download_csv(exam_index):
 
     # Manual CSV creation instead of pandas
     output = io.StringIO()
+    output.write("sep=;\n")
     if exam_data:
         # Header
         headers = list(exam_data[0].keys())
@@ -1392,6 +1393,7 @@ def download_clo_csv():
         
     # Manual CSV creation instead of pandas
     output = io.StringIO()
+    output.write("sep=;\n")
     if clo_table:
         # Header (without 'id')
         headers = ['name', 'order']
@@ -1490,6 +1492,7 @@ def download_clo_analysis_csv():
     
     # Manual CSV creation instead of pandas
     output = io.StringIO()
+    output.write("sep=;\n")
     if analysis_data:
         # Header
         headers = list(analysis_data[0].keys())
@@ -1664,6 +1667,7 @@ def download_all_tables():
     
     # CSV dosyası oluştur
     output = io.StringIO()
+    output.write("sep=;\n")
     for row in all_rows:
         # Her satırı CSV formatında yaz
         csv_row = []
@@ -1800,6 +1804,7 @@ def download_summary_csv():
         all_rows.append(row)
 
     output = io.StringIO()
+    output.write("sep=;\n")
     for row in all_rows:
         csv_row = []
         for cell in row:
